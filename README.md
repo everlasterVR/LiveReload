@@ -2,6 +2,8 @@
 
 Monitors the source files of other plugins for changes and auto-reloads them when changes are detected.
 
+Releases: <https://hub.virtamate.com/resources/livereload.14733/>
+
 ## Usage
 
 Add as scene plugin, session plugin or to any atom which has your plugin(s) loaded.
