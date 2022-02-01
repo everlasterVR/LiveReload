@@ -59,8 +59,7 @@ namespace LiveReload
                     { $@"{_pluginPath}\.git" },
                     { $@"{_pluginPath}\.vscode" },
                     { $@"{_pluginPath}\bin" },
-                    { $@"{_pluginPath}\obj" },
-                    { $@"{_pluginPath}\local" },
+                    { $@"{_pluginPath}\obj" }
                 }
             );
 
