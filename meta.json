@@ -4,7 +4,7 @@
    "packageName" : "LiveReload", 
    "standardReferenceVersionOption" : "Latest", 
    "scriptReferenceVersionOption" : "Exact", 
-   "description" : "v<Version>. Monitors the source files of local plugins for changes and auto-reloads them.",
+   "description" : "v<Version>-alpha. Monitors the source files of local plugins for changes and auto-reloads them.",
    "credits" : "", 
    "instructions" : "Add as scene plugin, session plugin or to any atom which has your plugin loaded. Monitored plugin's dir must be under Custom/Scripts/[CreatorName] where CreatorName is what you have set in User Preferences.", 
    "promotionalLink" : "", 
