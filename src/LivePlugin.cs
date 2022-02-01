@@ -12,7 +12,7 @@ namespace LiveReload
     {
         private string _pluginFullPath;
         private string _pluginPath;
-        public string PluginDir { get; set; }
+        private string _pluginDir;
 
         private FileSearch _fileSearch;
         private Atom _atom;
@@ -35,7 +35,7 @@ namespace LiveReload
             _pluginFullPath = pluginFullPath;
             var arr = _pluginFullPath.Split('/');
             _pluginPath = string.Join(@"\", arr).Replace($@"\{arr[arr.Length - 1]}", "");
-            PluginDir = arr[arr.Length - 2];
+            _pluginDir = arr[arr.Length - 2];
 
             _atom = SuperController.singleton.GetAtoms().Find(x => x.uid == atomUid);
             if(_atom == null)
@@ -66,6 +66,16 @@ namespace LiveReload
             WaitingForUIOpened = false;
         }
 
+        public string BuildHeader(bool includeAtom)
+        {
+            if(!includeAtom)
+            {
+                return _pluginDir;
+            }
+
+            return $"{_atom.uid}: {_pluginDir}";
+        }
+
         public void CheckDiff()
         {
             List<string> paths = new List<string>(_files.Keys);
@@ -82,7 +92,7 @@ namespace LiveReload
                         $"{statusText.val}";
                     if(logReloads.val)
                     {
-                        SuperController.LogMessage($"{PluginDir} reloading: {path.Replace(_pluginPath, "").TrimStart('\\')} changed");
+                        SuperController.LogMessage($"{_pluginDir} reloading: {path.Replace(_pluginPath, "").TrimStart('\\')} changed");
                     }
                     reload = true;
                 }

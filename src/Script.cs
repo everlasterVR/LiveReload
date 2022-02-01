@@ -133,7 +133,7 @@ namespace LiveReload
             this.NewSpacer(10f);
             this.NewSpacer(10f, true);
 
-            var pathStorable = this.NewTextField("Plugin", livePlugin.PluginDir, 36, 50);
+            var pathStorable = this.NewTextField("Plugin", livePlugin.BuildHeader(containingAtom.name == "CoreControl"), 36, 50);
             pathStorable.dynamicText.textColor = Color.black;
             pathStorable.dynamicText.backgroundColor = Color.white;
 
