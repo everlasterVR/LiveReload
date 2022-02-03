@@ -169,8 +169,9 @@ namespace LiveReload
 
                 var managerJson = plugin.manager.GetJSON();
                 var pluginsObj = managerJson["plugins"].AsObject;
-                var key = pluginsObj.Keys.ToList()[i];
-                var pluginFullPath = pluginsObj[key].Value;
+                var sortedKeys = new List<string>(pluginsObj.Keys.ToList());
+                sortedKeys.Sort();
+                var pluginFullPath = pluginsObj[sortedKeys[i]].Value;
                 if(pluginFullPath == _pluginFullPath)
                 {
                     return plugin;
