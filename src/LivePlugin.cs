@@ -83,8 +83,16 @@ namespace LiveReload
 
             foreach(var path in paths)
             {
-                byte[] contents = FileManagerSecure.ReadAllBytes(path);
-                if(!contents.SequenceEqual(_files[path]))
+                byte[] contents = null;
+                try
+                {
+                    contents = FileManagerSecure.ReadAllBytes(path);
+                }
+                catch(Exception)
+                {
+                }
+
+                if(contents != null && !contents.SequenceEqual(_files[path]))
                 {
                     _files[path] = contents;
                     statusText.val =
