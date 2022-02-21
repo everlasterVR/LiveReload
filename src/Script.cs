@@ -130,21 +130,21 @@ namespace LiveReload
 
         public void BuildUISection(LivePlugin livePlugin)
         {
-            this.NewSpacer(10f);
-            this.NewSpacer(10f, true);
+            livePlugin.upperLeftSpacer = this.NewSpacer(10f);
+            livePlugin.upperRightSpacer = this.NewSpacer(10f, true);
 
-            var pathStorable = this.NewTextField("Plugin", livePlugin.BuildHeader(containingAtom.name == "CoreControl"), 36, 50);
-            pathStorable.dynamicText.textColor = Color.black;
-            pathStorable.dynamicText.backgroundColor = Color.white;
+            livePlugin.headerText = this.NewTextField("Plugin", livePlugin.BuildHeader(containingAtom.name == "CoreControl"), 36, 50);
+            livePlugin.headerText.dynamicText.textColor = Color.black;
+            livePlugin.headerText.dynamicText.backgroundColor = Color.white;
 
-            livePlugin.headerText = UI.NewInputField(pathStorable.dynamicText);
-            livePlugin.headerText.interactable = false;
+            livePlugin.headerTextField = UI.NewInputField(livePlugin.headerText.dynamicText);
+            livePlugin.headerTextField.interactable = false;
 
             livePlugin.monitoringOn = this.NewToggle("Monitoring on", true);
             livePlugin.logReloads = this.NewToggle("Output changes to Message Log", false);
             livePlugin.statusText = this.NewTextField("Status", "", 24, 255, true);
 
-            this.NewSpacer(60f);
+            livePlugin.lowerLeftSpacer = this.NewSpacer(60f);
         }
 
         public void Update()
@@ -166,8 +166,22 @@ namespace LiveReload
 
         private void CheckAllPlugins()
         {
-            foreach(var livePlugin in _livePlugins)
+            for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
+                var livePlugin = _livePlugins[i];
+                if(!livePlugin.Present())
+                {
+                    RemoveSpacer(livePlugin.upperLeftSpacer);
+                    RemoveSpacer(livePlugin.upperRightSpacer);
+                    Destroy(livePlugin.headerTextField);
+                    RemoveTextField(livePlugin.headerText);
+                    RemoveToggle(livePlugin.monitoringOn);
+                    RemoveToggle(livePlugin.logReloads);
+                    RemoveTextField(livePlugin.statusText);
+                    RemoveSpacer(livePlugin.lowerLeftSpacer);
+                    _livePlugins.RemoveAt(i);
+                    continue;
+                }
                 if(livePlugin.WaitingForUIOpened)
                 {
                     livePlugin.TryFindReloadButton();
@@ -186,7 +200,7 @@ namespace LiveReload
         {
             foreach(var livePlugin in _livePlugins)
             {
-                Destroy(livePlugin.headerText);
+                Destroy(livePlugin.headerTextField);
             }
         }
     }

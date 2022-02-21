@@ -21,10 +21,14 @@ namespace LiveReload
 
         private Dictionary<string, byte[]> _files;
 
-        public InputField headerText;
+        public UIDynamic upperLeftSpacer;
+        public UIDynamic upperRightSpacer;
+        public JSONStorableString headerText;
+        public InputField headerTextField;
         public JSONStorableBool logReloads;
         public JSONStorableBool monitoringOn;
         public JSONStorableString statusText;
+        public UIDynamic lowerLeftSpacer;
 
         public bool WaitingForUIOpened { get; set; }
 
@@ -72,6 +76,17 @@ namespace LiveReload
             }
 
             return $"{_atom.uid}: {_pluginDir}";
+        }
+
+        public bool Present()
+        {
+            var plugin = (MVRScript) _atom.GetStorableByID(_pluginStoreId);
+            //LogMessage($"{_pluginStoreId}: {plugin == null}");
+            if(plugin != null)
+            {
+                //LogMessage($"{_pluginStoreId}: {plugin.GetType()} {plugin.storeId}");
+            }
+            return plugin != null;
         }
 
         public void CheckDiff()
