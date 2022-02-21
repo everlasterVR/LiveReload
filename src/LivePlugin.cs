@@ -105,11 +105,6 @@ namespace LiveReload
         public bool Present()
         {
             var plugin = (MVRScript) _atom.GetStorableByID(_pluginStoreId);
-            //LogMessage($"{_pluginStoreId}: {plugin == null}");
-            if(plugin != null)
-            {
-                //LogMessage($"{_pluginStoreId}: {plugin.GetType()} {plugin.storeId}");
-            }
             return plugin != null;
         }
 
@@ -153,10 +148,7 @@ namespace LiveReload
         {
             try
             {
-                if(_reloadButton == null)
-                {
-                    TryFindReloadButton();
-                }
+                _fileSearch.FindFiles(_files); //ensure any new files added before this reload will be monitored for changes
                 _reloadButton.onClick.Invoke();
                 _reloadButton = FindReloadButton(); // ensure reload button is correct after reloading plugin
             }
@@ -172,8 +164,7 @@ namespace LiveReload
             try
             {
                 _reloadButton = FindReloadButton();
-                _files = _fileSearch.GetFiles(); // todo is this fast enough to do on every reload
-                if(WaitingForUIOpened)
+                if(_reloadButton != null && WaitingForUIOpened)
                 {
                     LogMessage($"Enabled for {_pluginFullPath}.");
                     WaitingForUIOpened = false;
@@ -186,9 +177,22 @@ namespace LiveReload
             }
         }
 
+        public void FindFiles()
+        {
+            if(_files == null)
+            {
+                _files = new Dictionary<string, byte[]>();
+            }
+            _fileSearch.FindFiles(_files);
+        }
+
         private Button FindReloadButton()
         {
             var pluginManager = FindPluginManagerAndSetStoreId();
+            if(pluginManager == null)
+            {
+                return null;
+            }
             var pluginListPanel = pluginManager.pluginListPanel;
 
             foreach(Transform pluginPanel in pluginListPanel)

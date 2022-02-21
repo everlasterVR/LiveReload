@@ -120,6 +120,7 @@ namespace LiveReload
                     if(livePlugin.monitoringOn.val)
                     {
                         livePlugin.TryFindReloadButton();
+                        livePlugin.FindFiles();
                     }
                     _livePlugins.Add(livePlugin);
                 }
@@ -150,16 +151,17 @@ namespace LiveReload
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
                 var livePlugin = _livePlugins[i];
+                if(livePlugin.WaitingForUIOpened)
+                {
+                    livePlugin.TryFindReloadButton();
+                    livePlugin.FindFiles();
+                    continue;
+                }
                 if(!livePlugin.Present())
                 {
                     livePlugin.RemoveFromUI(this);
                     Destroy(livePlugin.headerTextField);
                     _livePlugins.RemoveAt(i);
-                    continue;
-                }
-                if(livePlugin.WaitingForUIOpened)
-                {
-                    livePlugin.TryFindReloadButton();
                     continue;
                 }
                 if(!livePlugin.monitoringOn.val)
