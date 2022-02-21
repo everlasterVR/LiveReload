@@ -176,11 +176,19 @@ namespace LiveReload
         private MVRPluginManager FindPluginManagerAndSetStoreId()
         {
             var plugins = FindPluginsOnAtom(_atom);
-
-            //assume plugins on atom are in the same order as plugins in manager json
-            for(int i = 0; i < plugins.Count; i++)
+            var firstPluginOfEachGroup = new List<MVRScript>();
+            foreach(var plugin in plugins)
             {
-                var plugin = plugins[i];
+                string id = plugin.storeId.Substring(0, plugin.storeId.IndexOf('_'));
+                if(!firstPluginOfEachGroup.Exists(x => x.storeId.StartsWith(id)))
+                {
+                    firstPluginOfEachGroup.Add(plugin);
+                }
+            }
+
+            for(int i = 0; i < firstPluginOfEachGroup.Count; i++)
+            {
+                var plugin = firstPluginOfEachGroup[i];
                 var manager = plugin.manager;
                 var pluginListPanel = manager.pluginListPanel;
                 if(pluginListPanel == null)
