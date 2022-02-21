@@ -16,8 +16,6 @@ namespace LiveReload
 
         private FileSearch _fileSearch;
         private Atom _atom;
-
-        private MVRScript _plugin;
         private string _pluginStoreId;
         private Button _reloadButton;
 
@@ -108,61 +106,83 @@ namespace LiveReload
 
             if(reload)
             {
-                try
-                {
-                    if(_plugin == null)
-                    {
-                        TryFindPlugin();
-                    }
-                    _reloadButton.onClick.Invoke();
-                    TryFindPlugin();
-                }
-                catch(Exception e)
-                {
-                    LogError($"Error reloading plugin {_plugin.storeId} on atom {_atom.uid}: {e}");
-                }
+                Reload();
             }
         }
 
-        public void TryFindPlugin()
+        public void Reload()
         {
             try
             {
-                if(_pluginStoreId == null)
+                if(_reloadButton == null)
                 {
-                    _plugin = GetFromPluginManager();
-                    if(_plugin != null)
-                    {
-                        _pluginStoreId = _plugin.storeId;
-                        _reloadButton = FindReloadButton();
-                        _files = _fileSearch.GetFiles();
-                        if(WaitingForUIOpened)
-                        {
-                            LogMessage($"Enabled for {_pluginFullPath}.");
-                            WaitingForUIOpened = false;
-                            statusText.val = "";
-                        }
-                    }
+                    TryFindReloadButton();
                 }
-                else
+                _reloadButton.onClick.Invoke();
+                _reloadButton = FindReloadButton(); // ensure reload button is correct after reloading plugin
+            }
+            catch(Exception e)
+            {
+                //todo actual name parsing
+                LogError($"Error reloading plugin {_pluginStoreId} on atom {_atom.uid}: {e}");
+            }
+        }
+
+        public void TryFindReloadButton()
+        {
+            try
+            {
+                _reloadButton = FindReloadButton();
+                _files = _fileSearch.GetFiles(); // todo is this fast enough to do on every reload
+                if(WaitingForUIOpened)
                 {
-                    _plugin = (MVRScript) _atom.GetStorableByID(_pluginStoreId);
+                    LogMessage($"Enabled for {_pluginFullPath}.");
+                    WaitingForUIOpened = false;
+                    statusText.val = "";
                 }
             }
             catch(Exception e)
             {
-                LogError($"Unable to find plugin: {e}");
+                LogError($"Unable to find reload button for plugin: {e}");
             }
         }
 
-        private MVRScript GetFromPluginManager()
+        private Button FindReloadButton()
         {
-            //assume plugins on atom are in the same order as plugins in manager json
+            var pluginManager = FindPluginManagerAndSetStoreId();
+            var pluginListPanel = pluginManager.pluginListPanel;
+
+            foreach(Transform pluginPanel in pluginListPanel)
+            {
+                var pluginPanelContent = pluginPanel.Find("Content");
+                foreach(Transform scriptPanel in pluginPanelContent)
+                {
+                    var uidTransform = scriptPanel.Find("UID");
+                    if(_pluginStoreId == uidTransform.GetComponent<Text>().text)
+                    {
+                        var buttonTransform = pluginPanel.Find("ReloadButton");
+                        Button button = pluginPanel.Find("ReloadButton").GetComponent<Button>();
+                        if(button != null)
+                        {
+                            return button;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private MVRPluginManager FindPluginManagerAndSetStoreId()
+        {
             var plugins = FindPluginsOnAtom(_atom);
+
+            //assume plugins on atom are in the same order as plugins in manager json
             for(int i = 0; i < plugins.Count; i++)
             {
                 var plugin = plugins[i];
-                var pluginListPanel = plugin.manager.pluginListPanel;
+                var manager = plugin.manager;
+                var pluginListPanel = manager.pluginListPanel;
                 if(pluginListPanel == null)
                 {
                     if(!WaitingForUIOpened)
@@ -175,39 +195,18 @@ namespace LiveReload
                     break;
                 }
 
-                var managerJson = plugin.manager.GetJSON();
-                var pluginsObj = managerJson["plugins"].AsObject;
+                var pluginsObj = manager.GetJSON()["plugins"].AsObject;
                 var sortedKeys = new List<string>(pluginsObj.Keys.ToList());
                 sortedKeys.Sort();
                 var pluginFullPath = pluginsObj[sortedKeys[i]].Value;
                 if(pluginFullPath == _pluginFullPath)
                 {
-                    return plugin;
+                    _pluginStoreId = plugin.storeId;
+                    return manager;
                 }
             }
 
             return null;
-        }
-
-        private Button FindReloadButton()
-        {
-            var pluginListPanel = _plugin.manager.pluginListPanel;
-            Button button = null;
-            foreach(Transform pluginPanel in pluginListPanel)
-            {
-                var pluginPanelContent = pluginPanel.Find("Content");
-                foreach(Transform scriptPanel in pluginPanelContent)
-                {
-                    var uidTransform = scriptPanel.Find("UID");
-                    if(_pluginStoreId == uidTransform.GetComponent<Text>().text)
-                    {
-                        var buttonTransform = pluginPanel.Find("ReloadButton");
-                        button = pluginPanel.Find("ReloadButton").GetComponent<Button>();
-                    }
-                }
-            }
-
-            return button;
         }
     }
 }

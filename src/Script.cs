@@ -119,7 +119,7 @@ namespace LiveReload
                     BuildUISection(livePlugin);
                     if(livePlugin.monitoringOn.val)
                     {
-                        livePlugin.TryFindPlugin();
+                        livePlugin.TryFindReloadButton();
                     }
                     _livePlugins.Add(livePlugin);
                 }
@@ -168,13 +168,13 @@ namespace LiveReload
         {
             foreach(var livePlugin in _livePlugins)
             {
-                if(!livePlugin.monitoringOn.val)
-                {
-                    continue;
-                }
                 if(livePlugin.WaitingForUIOpened)
                 {
-                    livePlugin.TryFindPlugin();
+                    livePlugin.TryFindReloadButton();
+                    continue;
+                }
+                if(!livePlugin.monitoringOn.val)
+                {
                     continue;
                 }
 
