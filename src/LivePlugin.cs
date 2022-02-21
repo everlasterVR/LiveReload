@@ -21,14 +21,14 @@ namespace LiveReload
 
         private Dictionary<string, byte[]> _files;
 
-        public UIDynamic upperLeftSpacer;
-        public UIDynamic upperRightSpacer;
-        public JSONStorableString headerText;
+        private UIDynamic _upperLeftSpacer;
+        private UIDynamic _upperRightSpacer;
+        private JSONStorableString _headerText;
         public InputField headerTextField;
-        public JSONStorableBool logReloads;
+        private JSONStorableBool _logReloads;
         public JSONStorableBool monitoringOn;
-        public JSONStorableString statusText;
-        public UIDynamic lowerLeftSpacer;
+        private JSONStorableString _statusText;
+        private UIDynamic _lowerLeftSpacer;
 
         public bool WaitingForUIOpened { get; set; }
 
@@ -68,14 +68,38 @@ namespace LiveReload
             WaitingForUIOpened = false;
         }
 
-        public string BuildHeader(bool includeAtom)
+        public void AddToUI(MVRScript script)
         {
-            if(!includeAtom)
-            {
-                return _pluginDir;
-            }
+            _upperLeftSpacer = script.NewSpacer(10);
+            _upperRightSpacer = script.NewSpacer(10, true);
 
-            return $"{_atom.uid}: {_pluginDir}";
+            string header = _atom.name == "CoreControl"
+                ? _pluginDir
+                : $"{_atom.uid}: {_pluginDir}";
+
+            _headerText = script.NewTextField("Plugin", header, 36, 50);
+            _headerText.dynamicText.textColor = Color.black;
+            _headerText.dynamicText.backgroundColor = Color.white;
+
+            headerTextField = UI.NewInputField(_headerText.dynamicText);
+            headerTextField.interactable = false;
+
+            monitoringOn = script.NewToggle("Monitoring on", true);
+            _logReloads = script.NewToggle("Output changes to Message Log", false);
+            _statusText = script.NewTextField("Status", "", 24, 255, true);
+
+            _lowerLeftSpacer = script.NewSpacer(60);
+        }
+
+        public void RemoveFromUI(MVRScript script)
+        {
+            script.RemoveSpacer(_upperLeftSpacer);
+            script.RemoveSpacer(_upperRightSpacer);
+            script.RemoveTextField(_headerText);
+            script.RemoveToggle(monitoringOn);
+            script.RemoveToggle(_logReloads);
+            script.RemoveTextField(_statusText);
+            script.RemoveSpacer(_lowerLeftSpacer);
         }
 
         public bool Present()
@@ -108,10 +132,10 @@ namespace LiveReload
                 if(contents != null && !contents.SequenceEqual(_files[path]))
                 {
                     _files[path] = contents;
-                    statusText.val =
+                    _statusText.val =
                         $"{path.Replace(_pluginPath, "").TrimStart('\\')} changed\n" +
-                        $"{statusText.val}";
-                    if(logReloads.val)
+                        $"{_statusText.val}";
+                    if(_logReloads.val)
                     {
                         SuperController.LogMessage($"{_pluginDir} reloading: {path.Replace(_pluginPath, "").TrimStart('\\')} changed");
                     }
@@ -153,7 +177,7 @@ namespace LiveReload
                 {
                     LogMessage($"Enabled for {_pluginFullPath}.");
                     WaitingForUIOpened = false;
-                    statusText.val = "";
+                    _statusText.val = "";
                 }
             }
             catch(Exception e)
@@ -211,7 +235,7 @@ namespace LiveReload
                     if(!WaitingForUIOpened)
                     {
                         LogMessage($"Open the UI of atom '{_atom.uid}' once to enable live reloading for {_pluginFullPath}.");
-                        statusText.val = UI.Color($"<b><size=32>Disabled.\nOpen UI of atom '{_atom.uid}'</size></b>", new Color(0.5f, 0, 0));
+                        _statusText.val = UI.Color($"<b><size=32>Disabled.\nOpen UI of atom '{_atom.uid}'</size></b>", new Color(0.5f, 0, 0));
                         WaitingForUIOpened = true;
                     }
 

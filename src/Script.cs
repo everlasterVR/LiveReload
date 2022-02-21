@@ -116,7 +116,7 @@ namespace LiveReload
                 foreach(var pluginPath in atomPlugins.Value)
                 {
                     var livePlugin = new LivePlugin(pluginPath, atomPlugins.Key);
-                    BuildUISection(livePlugin);
+                    livePlugin.AddToUI(this);
                     if(livePlugin.monitoringOn.val)
                     {
                         livePlugin.TryFindReloadButton();
@@ -126,25 +126,6 @@ namespace LiveReload
             }
 
             enabled = true;
-        }
-
-        public void BuildUISection(LivePlugin livePlugin)
-        {
-            livePlugin.upperLeftSpacer = this.NewSpacer(10f);
-            livePlugin.upperRightSpacer = this.NewSpacer(10f, true);
-
-            livePlugin.headerText = this.NewTextField("Plugin", livePlugin.BuildHeader(containingAtom.name == "CoreControl"), 36, 50);
-            livePlugin.headerText.dynamicText.textColor = Color.black;
-            livePlugin.headerText.dynamicText.backgroundColor = Color.white;
-
-            livePlugin.headerTextField = UI.NewInputField(livePlugin.headerText.dynamicText);
-            livePlugin.headerTextField.interactable = false;
-
-            livePlugin.monitoringOn = this.NewToggle("Monitoring on", true);
-            livePlugin.logReloads = this.NewToggle("Output changes to Message Log", false);
-            livePlugin.statusText = this.NewTextField("Status", "", 24, 255, true);
-
-            livePlugin.lowerLeftSpacer = this.NewSpacer(60f);
         }
 
         public void Update()
@@ -171,14 +152,8 @@ namespace LiveReload
                 var livePlugin = _livePlugins[i];
                 if(!livePlugin.Present())
                 {
-                    RemoveSpacer(livePlugin.upperLeftSpacer);
-                    RemoveSpacer(livePlugin.upperRightSpacer);
+                    livePlugin.RemoveFromUI(this);
                     Destroy(livePlugin.headerTextField);
-                    RemoveTextField(livePlugin.headerText);
-                    RemoveToggle(livePlugin.monitoringOn);
-                    RemoveToggle(livePlugin.logReloads);
-                    RemoveTextField(livePlugin.statusText);
-                    RemoveSpacer(livePlugin.lowerLeftSpacer);
                     _livePlugins.RemoveAt(i);
                     continue;
                 }
