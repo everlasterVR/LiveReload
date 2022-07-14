@@ -90,5 +90,8 @@
     <None Include="meta.json" />
     <None Include="README.md" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="todo.md" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
