@@ -5,12 +5,12 @@ namespace LiveReload
 {
     internal class FileSearch
     {
-        private string _pluginPath;
-        private List<string> _patterns;
-        private List<string> _excludeDirs;
+        private readonly List<string> _excludeDirs;
+        private readonly List<string> _patterns;
+        private readonly string _pluginPath;
+        private List<string> _fileNames;
 
         private Dictionary<string, byte[]> _files;
-        private List<string> _fileNames;
 
         public FileSearch(string pluginPath, List<string> patterns, List<string> excludeDirs)
         {
@@ -23,7 +23,7 @@ namespace LiveReload
         {
             _files = files;
             _fileNames = _files.Keys.ToList();
-            foreach(var pattern in _patterns)
+            foreach(string pattern in _patterns)
             {
                 SearchFiles(_pluginPath, pattern);
             }
@@ -31,10 +31,9 @@ namespace LiveReload
 
         private void SearchFiles(string path, string pattern)
         {
-            var result = new Dictionary<string, byte[]>();
-            List<string> fileNames = FileManagerSecure.GetFiles(path, pattern).ToList();
+            var fileNames = FileManagerSecure.GetFiles(path, pattern).ToList();
 
-            foreach(var fileName in fileNames)
+            foreach(string fileName in fileNames)
             {
                 if(!_fileNames.Contains(fileName))
                 {
@@ -42,7 +41,7 @@ namespace LiveReload
                 }
             }
 
-            foreach(var dir in FileManagerSecure.GetDirectories(path))
+            foreach(string dir in FileManagerSecure.GetDirectories(path))
             {
                 if(!_excludeDirs.Contains(dir))
                 {

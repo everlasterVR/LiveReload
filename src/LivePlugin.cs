@@ -1,41 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MVR.FileManagementSecure;
 using UnityEngine;
 using UnityEngine.UI;
-using MVR.FileManagementSecure;
 using static LiveReload.Utils;
 
 namespace LiveReload
 {
-    internal class LivePlugin
+    public class LivePlugin
     {
-        private string _pluginFullPath;
-        private string _pluginPath;
-        private string _pluginDir;
+        private readonly Atom _atom;
 
-        private FileSearch _fileSearch;
-        private Atom _atom;
-        private string _pluginStoreId;
-        private Button _reloadButton;
+        private readonly FileSearch _fileSearch;
+        private readonly string _pluginDir;
+        private readonly string _pluginFullPath;
+        private readonly string _pluginPath;
 
         private Dictionary<string, byte[]> _files;
+        private JSONStorableString _headerText;
+        private JSONStorableBool _logReloads;
+        private UIDynamic _lowerLeftSpacer;
+        private string _pluginStoreId;
+        private Button _reloadButton;
+        private JSONStorableString _statusText;
 
         private UIDynamic _upperLeftSpacer;
         private UIDynamic _upperRightSpacer;
-        private JSONStorableString _headerText;
         public InputField headerTextField;
-        private JSONStorableBool _logReloads;
         public JSONStorableBool monitoringOn;
-        private JSONStorableString _statusText;
-        private UIDynamic _lowerLeftSpacer;
-
-        public bool WaitingForUIOpened { get; set; }
 
         public LivePlugin(string pluginFullPath, string atomUid)
         {
             _pluginFullPath = pluginFullPath;
-            var arr = _pluginFullPath.Split('/');
+            string[] arr = _pluginFullPath.Split('/');
             _pluginPath = string.Join(@"\", arr).Replace($@"\{arr[arr.Length - 1]}", "");
             _pluginDir = arr[arr.Length - 2];
 
@@ -51,22 +49,24 @@ namespace LiveReload
                 //todo configurable
                 new List<string>
                 {
-                    { "*.cs" },
-                    { "*.cslist" },
-                    { "*.json" }
+                    "*.cs",
+                    "*.cslist",
+                    "*.json",
                 },
                 //todo from gitignore
                 new List<string>
                 {
-                    { $@"{_pluginPath}\.git" },
-                    { $@"{_pluginPath}\.vscode" },
-                    { $@"{_pluginPath}\bin" },
-                    { $@"{_pluginPath}\obj" }
+                    $@"{_pluginPath}\.git",
+                    $@"{_pluginPath}\.vscode",
+                    $@"{_pluginPath}\bin",
+                    $@"{_pluginPath}\obj",
                 }
             );
 
-            WaitingForUIOpened = false;
+            waitingForUIOpened = false;
         }
+
+        public bool waitingForUIOpened { get; private set; }
 
         public void AddToUI(MVRScript script)
         {
@@ -110,10 +110,10 @@ namespace LiveReload
 
         public void CheckDiff()
         {
-            List<string> paths = new List<string>(_files.Keys);
+            var paths = new List<string>(_files.Keys);
             bool reload = false;
 
-            foreach(var path in paths)
+            foreach(string path in paths)
             {
                 byte[] contents = null;
                 try
@@ -122,6 +122,7 @@ namespace LiveReload
                 }
                 catch(Exception)
                 {
+                    // ignored
                 }
 
                 if(contents != null && !contents.SequenceEqual(_files[path]))
@@ -134,6 +135,7 @@ namespace LiveReload
                     {
                         SuperController.LogMessage($"{_pluginDir} reloading: {path.Replace(_pluginPath, "").TrimStart('\\')} changed");
                     }
+
                     reload = true;
                 }
             }
@@ -144,7 +146,7 @@ namespace LiveReload
             }
         }
 
-        public void Reload()
+        private void Reload()
         {
             try
             {
@@ -164,10 +166,10 @@ namespace LiveReload
             try
             {
                 _reloadButton = FindReloadButton();
-                if(_reloadButton != null && WaitingForUIOpened)
+                if(_reloadButton != null && waitingForUIOpened)
                 {
                     LogMessage($"Enabled for {_pluginFullPath}.");
-                    WaitingForUIOpened = false;
+                    waitingForUIOpened = false;
                     _statusText.val = "";
                 }
             }
@@ -183,6 +185,7 @@ namespace LiveReload
             {
                 _files = new Dictionary<string, byte[]>();
             }
+
             _fileSearch.FindFiles(_files);
         }
 
@@ -193,6 +196,7 @@ namespace LiveReload
             {
                 return null;
             }
+
             var pluginListPanel = pluginManager.pluginListPanel;
 
             foreach(Transform pluginPanel in pluginListPanel)
@@ -204,7 +208,7 @@ namespace LiveReload
                     if(_pluginStoreId == uidTransform.GetComponent<Text>().text)
                     {
                         var buttonTransform = pluginPanel.Find("ReloadButton");
-                        Button button = pluginPanel.Find("ReloadButton").GetComponent<Button>();
+                        var button = buttonTransform.GetComponent<Button>();
                         if(button != null)
                         {
                             return button;
@@ -236,11 +240,11 @@ namespace LiveReload
                 var pluginListPanel = manager.pluginListPanel;
                 if(pluginListPanel == null)
                 {
-                    if(!WaitingForUIOpened)
+                    if(!waitingForUIOpened)
                     {
                         LogMessage($"Open the UI of atom '{_atom.uid}' once to enable live reloading for {_pluginFullPath}.");
                         _statusText.val = UI.Color($"<b><size=32>Disabled.\nOpen UI of atom '{_atom.uid}'</size></b>", new Color(0.5f, 0, 0));
-                        WaitingForUIOpened = true;
+                        waitingForUIOpened = true;
                     }
 
                     break;
@@ -249,7 +253,7 @@ namespace LiveReload
                 var pluginsObj = manager.GetJSON()["plugins"].AsObject;
                 var sortedKeys = new List<string>(pluginsObj.Keys.ToList());
                 sortedKeys.Sort();
-                var pluginFullPath = pluginsObj[sortedKeys[i]].Value;
+                string pluginFullPath = pluginsObj[sortedKeys[i]].Value;
                 if(pluginFullPath == _pluginFullPath)
                 {
                     _pluginStoreId = plugin.storeId;

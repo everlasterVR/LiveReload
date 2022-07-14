@@ -10,35 +10,31 @@ namespace LiveReload
         public static List<MVRScript> FindPluginsOnAtom(Atom atom)
         {
             var plugins = new List<MVRScript>();
-            foreach(var storableId in atom.GetStorableIDs())
+            foreach(string storableId in atom.GetStorableIDs())
             {
                 var storable = atom.GetStorableByID(storableId);
                 try
                 {
-                    MVRScript plugin = (MVRScript) storable;
+                    var plugin = (MVRScript) storable;
                     plugins.Add(plugin);
                 }
                 catch(Exception)
                 {
+                    // ignored
                 }
             }
+
             return plugins;
         }
 
-        public static void LogError(string message, string name = "")
-        {
+        public static void LogError(string message, string name = "") =>
             SuperController.LogError(Format(message, name));
-        }
 
-        public static void LogMessage(string message, string name = "")
-        {
+        public static void LogMessage(string message, string name = "") =>
             SuperController.LogMessage(Format(message, name));
-        }
 
-        private static string Format(string message, string name)
-        {
-            return $"{nameof(LiveReload)} v{Script.version}: {message}{(string.IsNullOrEmpty(name) ? "" : $" [{name}]")}";
-        }
+        private static string Format(string message, string name) =>
+            $"{nameof(LiveReload)} v{Script.VERSION}: {message}{(string.IsNullOrEmpty(name) ? "" : $" [{name}]")}";
     }
 
     internal static class UI
@@ -52,8 +48,8 @@ namespace LiveReload
             bool rightSide = false
         )
         {
-            JSONStorableString storable = new JSONStorableString(paramName, initialValue);
-            UIDynamicTextField textField = script.CreateTextField(storable, rightSide);
+            var storable = new JSONStorableString(paramName, initialValue);
+            var textField = script.CreateTextField(storable, rightSide);
             textField.UItext.fontSize = fontSize;
             textField.height = height;
             return storable;
@@ -61,7 +57,7 @@ namespace LiveReload
 
         public static InputField NewInputField(UIDynamicTextField textField)
         {
-            InputField inputField = textField.gameObject.AddComponent<InputField>();
+            var inputField = textField.gameObject.AddComponent<InputField>();
             inputField.textComponent = textField.UItext;
             inputField.text = textField.text;
             inputField.textComponent.fontSize = textField.UItext.fontSize;
@@ -80,7 +76,7 @@ namespace LiveReload
             bool rightSide = false
         )
         {
-            JSONStorableBool storable = new JSONStorableBool(paramName, startingValue);
+            var storable = new JSONStorableBool(paramName, startingValue);
             script.CreateToggle(storable, rightSide);
             script.RegisterBool(storable);
             return storable;
@@ -96,24 +92,22 @@ namespace LiveReload
             bool rightSide = false
         )
         {
-            JSONStorableFloat storable = new JSONStorableFloat(paramName, startingValue, minValue, maxValue);
+            var storable = new JSONStorableFloat(paramName, startingValue, minValue, maxValue);
             storable.storeType = JSONStorableParam.StoreType.Physical;
             script.RegisterFloat(storable);
-            UIDynamicSlider slider = script.CreateSlider(storable, rightSide);
+            var slider = script.CreateSlider(storable, rightSide);
             slider.valueFormat = valueFormat;
             return storable;
         }
 
         public static UIDynamic NewSpacer(this MVRScript script, float height, bool rightSide = false)
         {
-            UIDynamic spacer = script.CreateSpacer(rightSide);
+            var spacer = script.CreateSpacer(rightSide);
             spacer.height = height;
             return spacer;
         }
 
-        public static string Color(string text, Color color)
-        {
-            return $"<color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color>";
-        }
+        public static string Color(string text, Color color) =>
+            $"<color=#{ColorUtility.ToHtmlStringRGB(color)}>{text}</color>";
     }
 }
