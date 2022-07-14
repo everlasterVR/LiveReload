@@ -9,7 +9,7 @@ namespace LiveReload
 {
     internal class Script : MVRScript
     {
-        public static readonly Version version = new Version("0.0.0");
+        public static readonly Version version = new Version("v0.0.0");
 
         private float _time = 0;
         private JSONStorableString pluginVersionStorable;
@@ -32,7 +32,7 @@ namespace LiveReload
                 }
                 mainDir = $@"Custom\Scripts\{creatorName}";
 
-                var title = this.NewTextField("Title", $"\n{nameof(LiveReload)} v{version}-alpha2", 36);
+                var title = this.NewTextField("Title", $"\n{nameof(LiveReload)} {version}", 36);
                 title.dynamicText.backgroundColor = Color.clear;
                 title.dynamicText.textColor = Color.white;
                 _checkInterval = this.NewFloatSlider("Check interval (sec)", 1f, 0.5f, 2f, "F1", true);
