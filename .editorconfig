@@ -203,7 +203,7 @@ resharper_vb_insert_final_newline = false
 resharper_wrap_after_invocation_lpar = false
 resharper_wrap_arguments_style = wrap_if_long
 resharper_wrap_before_invocation_rpar = false
-resharper_wrap_before_linq_expression = false
+resharper_wrap_before_linq_expression = true
 resharper_wrap_chained_binary_expressions = wrap_if_long
 resharper_wrap_chained_binary_patterns = chop_if_long
 resharper_wrap_chained_method_calls = wrap_if_long
@@ -234,7 +234,7 @@ resharper_foreach_can_be_converted_to_query_using_another_get_enumerator_highlig
 resharper_foreach_can_be_partly_converted_to_query_using_another_get_enumerator_highlighting = none
 resharper_inline_temporary_variable_highlighting = none
 resharper_invert_if_highlighting = none
-resharper_loop_can_be_converted_to_query_highlighting = hint
+resharper_loop_can_be_converted_to_query_highlighting = none
 resharper_redundant_base_qualifier_highlighting = warning
 resharper_redundant_string_interpolation_highlighting = warning
 resharper_suggest_base_type_for_parameter_highlighting = none

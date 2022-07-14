@@ -30,7 +30,8 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Update: {e}");
+                LogError($"Update: {e}. Disabling {nameof(LiveReload)}.");
+                enabled = false;
             }
         }
 
@@ -138,23 +139,36 @@ namespace LiveReload
                 yield break;
             }
 
-            foreach(var atomPlugins in pluginsByAtomInJson)
-            {
-                foreach(string pluginPath in atomPlugins.Value)
-                {
-                    var livePlugin = new LivePlugin(pluginPath, atomPlugins.Key);
-                    livePlugin.AddToUI(this);
-                    if(livePlugin.monitoringOn.val)
-                    {
-                        livePlugin.TryFindReloadButton();
-                        livePlugin.FindFiles();
-                    }
-
-                    _livePlugins.Add(livePlugin);
-                }
-            }
+            AddPluginsFromJson(pluginsByAtomInJson);
 
             enabled = true;
+        }
+
+        private void AddPluginsFromJson(Dictionary<string, List<string>> json)
+        {
+            try
+            {
+                foreach(var atomPlugins in json)
+                {
+                    foreach(string pluginPath in atomPlugins.Value)
+                    {
+                        var livePlugin = new LivePlugin(pluginPath, atomPlugins.Key);
+                        livePlugin.AddToUI(this);
+                        if(livePlugin.monitoringOn.val)
+                        {
+                            livePlugin.TryFindReloadButton();
+                            livePlugin.FindFiles();
+                        }
+
+                        _livePlugins.Add(livePlugin);
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                LogError($"AddPluginsFromJson: {e}");
+                throw;
+            }
         }
 
         private void CheckAllPlugins()

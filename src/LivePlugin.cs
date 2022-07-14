@@ -11,6 +11,7 @@ namespace LiveReload
     public class LivePlugin
     {
         private readonly Atom _atom;
+        private readonly MVRPluginManager _manager;
 
         private readonly FileSearch _fileSearch;
         private readonly string _pluginDir;
@@ -44,6 +45,7 @@ namespace LiveReload
                 return;
             }
 
+            _manager = _atom.GetComponentInChildren<MVRPluginManager>();
             _fileSearch = new FileSearch(
                 _pluginPath,
                 //todo configurable
@@ -104,8 +106,18 @@ namespace LiveReload
 
         public bool Present()
         {
-            var plugin = (MVRScript) _atom.GetStorableByID(_pluginStoreId);
-            return plugin != null;
+            var pluginsObj = _manager.GetJSON()["plugins"].AsObject;
+            bool present = pluginsObj.Keys
+                .Select(key => pluginsObj[key].Value)
+                .Any(path => path == _pluginFullPath);
+
+            if(!present)
+            {
+                // ensure reload button is correct if plugin in error state
+                _reloadButton = FindReloadButton();
+            }
+
+            return present;
         }
 
         public void CheckDiff()
@@ -191,73 +203,13 @@ namespace LiveReload
 
         private Button FindReloadButton()
         {
-            var pluginManager = FindPluginManagerAndSetStoreId();
-            if(pluginManager == null)
+            foreach(Transform transform in _manager.pluginListPanel)
             {
-                return null;
-            }
-
-            var pluginListPanel = pluginManager.pluginListPanel;
-
-            foreach(Transform pluginPanel in pluginListPanel)
-            {
-                var pluginPanelContent = pluginPanel.Find("Content");
-                foreach(Transform scriptPanel in pluginPanelContent)
+                var urlTransform = transform.Find("Panel").Find("URL");
+                if(urlTransform.GetComponent<Text>().text == _pluginFullPath)
                 {
-                    var uidTransform = scriptPanel.Find("UID");
-                    if(_pluginStoreId == uidTransform.GetComponent<Text>().text)
-                    {
-                        var buttonTransform = pluginPanel.Find("ReloadButton");
-                        var button = buttonTransform.GetComponent<Button>();
-                        if(button != null)
-                        {
-                            return button;
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private MVRPluginManager FindPluginManagerAndSetStoreId()
-        {
-            var plugins = FindPluginsOnAtom(_atom);
-            var firstPluginOfEachGroup = new List<MVRScript>();
-            foreach(var plugin in plugins)
-            {
-                string id = plugin.storeId.Substring(0, plugin.storeId.IndexOf('_'));
-                if(!firstPluginOfEachGroup.Exists(x => x.storeId.StartsWith(id)))
-                {
-                    firstPluginOfEachGroup.Add(plugin);
-                }
-            }
-
-            for(int i = 0; i < firstPluginOfEachGroup.Count; i++)
-            {
-                var plugin = firstPluginOfEachGroup[i];
-                var manager = plugin.manager;
-                var pluginListPanel = manager.pluginListPanel;
-                if(pluginListPanel == null)
-                {
-                    if(!waitingForUIOpened)
-                    {
-                        LogMessage($"Open the UI of atom '{_atom.uid}' once to enable live reloading for {_pluginFullPath}.");
-                        _statusText.val = UI.Color($"<b><size=32>Disabled.\nOpen UI of atom '{_atom.uid}'</size></b>", new Color(0.5f, 0, 0));
-                        waitingForUIOpened = true;
-                    }
-
-                    break;
-                }
-
-                var pluginsObj = manager.GetJSON()["plugins"].AsObject;
-                var sortedKeys = new List<string>(pluginsObj.Keys.ToList());
-                sortedKeys.Sort();
-                string pluginFullPath = pluginsObj[sortedKeys[i]].Value;
-                if(pluginFullPath == _pluginFullPath)
-                {
-                    _pluginStoreId = plugin.storeId;
-                    return manager;
+                    var buttonTransform = transform.Find("ReloadButton");
+                    return buttonTransform.GetComponent<Button>();
                 }
             }
 
