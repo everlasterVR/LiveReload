@@ -2,7 +2,9 @@
 
 Monitors the source files of other plugins for changes and auto-reloads them when changes are detected.
 
-Releases: <https://hub.virtamate.com/resources/livereload.14733/>
+**Download**: https://hub.virtamate.com/resources/livereload.14733
+
+**Support me at**: https://patreon.com/everlaster
 
 ## Usage
 
@@ -38,4 +40,4 @@ Useful additions and changes from collaborators are welcome - feel free to fork,
 
 ## License
 
-[MIT](https://github.com/everlasterVR/LiveReload/blob/master/LICENSE)
+[MIT](LICENSE)
