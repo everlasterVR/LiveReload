@@ -17,7 +17,7 @@ namespace LiveReload
         private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
         private bool _pluginsListBuilt;
 
-        private FrequencyRunner _pluginsCheckRunner;
+        private FrequencyRunner _checkPluginsRunner;
 
         public static JSONStorableBool logChanges { get; private set; }
 
@@ -30,20 +30,12 @@ namespace LiveReload
 
             try
             {
-                _pluginsCheckRunner.Run(CheckAllPlugins);
+                _checkPluginsRunner.Run(CheckAllPlugins);
             }
             catch(Exception e)
             {
                 LogError($"Update: {e}. Disabling {nameof(LiveReload)}.");
                 enabled = false;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            foreach(var livePlugin in _livePlugins)
-            {
-                Destroy(livePlugin.headerTextField);
             }
         }
 
@@ -65,11 +57,10 @@ namespace LiveReload
                 title.dynamicText.backgroundColor = Color.clear;
                 title.dynamicText.textColor = Color.white;
 
-                _pluginsCheckRunner = new FrequencyRunner(1);
-
                 var spacer = CreateSpacer(true);
                 spacer.height = 120;
 
+                _checkPluginsRunner = new FrequencyRunner(1);
                 StartCoroutine(DeferBuildLivePluginsList());
                 logChanges = script.NewToggle("Log detected changes", false, true);
             }
@@ -155,7 +146,12 @@ namespace LiveReload
         private IEnumerator DeferBuildLivePluginsList()
         {
             yield return new WaitForEndOfFrame();
+            BuildLivePluginsList();
+            _pluginsListBuilt = true;
+        }
 
+        private void BuildLivePluginsList()
+        {
             var sceneJSON = SuperController.singleton.GetSaveJSON().AsObject;
             var pluginsByAtom = FindPluginsInSceneJson(sceneJSON["atoms"].AsArray);
 
@@ -168,8 +164,8 @@ namespace LiveReload
                     foreach(string plugin in atomPlugins)
                     {
                         var livePlugin = new LivePlugin(plugin, atomName);
-                        livePlugin.AddToUI(this);
-                        if(livePlugin.monitoringOn.val)
+                        livePlugin.CreateMonitorToggle();
+                        if(livePlugin.monitorJsb.val)
                         {
                             livePlugin.TryFindReloadButton();
                             livePlugin.FindFiles();
@@ -184,8 +180,6 @@ namespace LiveReload
                 LogError($"AddPluginsFromJson: {e}");
                 enabled = false;
             }
-
-            _pluginsListBuilt = true;
         }
 
         private bool CheckAllPlugins()
@@ -197,23 +191,16 @@ namespace LiveReload
                 {
                     livePlugin.TryFindReloadButton();
                     livePlugin.FindFiles();
-                    continue;
                 }
-
-                if(!livePlugin.Present())
+                else if(!livePlugin.Present())
                 {
-                    livePlugin.RemoveFromUI(this);
-                    Destroy(livePlugin.headerTextField);
+                    livePlugin.RemoveFromUI();
                     _livePlugins.RemoveAt(i);
-                    continue;
                 }
-
-                if(!livePlugin.monitoringOn.val)
+                else if(livePlugin.monitorJsb.val)
                 {
-                    continue;
+                    livePlugin.CheckDiff();
                 }
-
-                livePlugin.CheckDiff();
             }
 
             return true;

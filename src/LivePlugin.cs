@@ -19,15 +19,8 @@ namespace LiveReload
         private readonly string _pluginPath;
 
         private Dictionary<string, byte[]> _files;
-        private JSONStorableString _headerText;
-        private UIDynamic _lowerLeftSpacer;
         private Button _reloadButton;
-        private JSONStorableString _statusText;
-
-        private UIDynamic _upperLeftSpacer;
-        private UIDynamic _upperRightSpacer;
-        public InputField headerTextField;
-        public JSONStorableBool monitoringOn;
+        public JSONStorableBool monitorJsb;
 
         public LivePlugin(string pluginFullPath, string atomUid)
         {
@@ -68,36 +61,19 @@ namespace LiveReload
 
         public bool waitingForUIOpened { get; private set; }
 
-        public void AddToUI(MVRScript script)
+        public void CreateMonitorToggle()
         {
-            _upperLeftSpacer = script.NewSpacer(10);
-            _upperRightSpacer = script.NewSpacer(10, true);
-
-            string header = _atom.name == "CoreControl"
+            monitorJsb = new JSONStorableBool($"monitor{_atom.uid}{_pluginDir}", true);
+            var monitorToggle = Script.script.CreateToggle(monitorJsb);
+            monitorToggle.label = _atom.name == "CoreControl"
                 ? _pluginDir
                 : $"{_atom.uid}: {_pluginDir}";
-
-            _headerText = script.NewTextField("Plugin", header, 36, 50);
-            _headerText.dynamicText.textColor = Color.black;
-            _headerText.dynamicText.backgroundColor = Color.white;
-
-            headerTextField = UI.NewInputField(_headerText.dynamicText);
-            headerTextField.interactable = false;
-
-            monitoringOn = script.NewToggle("Monitoring on", true);
-            _statusText = script.NewTextField("Status", "", 24, 255, true);
-
-            _lowerLeftSpacer = script.NewSpacer(60);
+            Script.script.RegisterBool(monitorJsb);
         }
 
-        public void RemoveFromUI(MVRScript script)
+        public void RemoveFromUI()
         {
-            script.RemoveSpacer(_upperLeftSpacer);
-            script.RemoveSpacer(_upperRightSpacer);
-            script.RemoveTextField(_headerText);
-            script.RemoveToggle(monitoringOn);
-            script.RemoveTextField(_statusText);
-            script.RemoveSpacer(_lowerLeftSpacer);
+            Script.script.RemoveToggle(monitorJsb);
         }
 
         public bool Present()
@@ -136,9 +112,6 @@ namespace LiveReload
                 if(contents != null && !contents.SequenceEqual(_files[path]))
                 {
                     _files[path] = contents;
-                    _statusText.val =
-                        $"{path.Replace(_pluginPath, "").TrimStart('\\')} changed\n" +
-                        $"{_statusText.val}";
                     if(Script.logChanges.val)
                     {
                         SuperController.LogMessage($"{_pluginDir}: {path.Replace(_pluginPath, "").TrimStart('\\')} changed. Reloading.");
@@ -177,7 +150,6 @@ namespace LiveReload
                 {
                     LogMessage($"Enabled for {_pluginFullPath}.");
                     waitingForUIOpened = false;
-                    _statusText.val = "";
                 }
             }
             catch(Exception e)
