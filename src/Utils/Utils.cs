@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace LiveReload
 {
-    internal static class Utils
+    public static class Utils
     {
         public static void LogError(string message, string name = "") =>
             SuperController.LogError(Format(message, name));
@@ -15,7 +15,7 @@ namespace LiveReload
             $"{nameof(LiveReload)} v{Script.VERSION}: {message}{(string.IsNullOrEmpty(name) ? "" : $" [{name}]")}";
     }
 
-    internal static class UI
+    public static class UI
     {
         public static JSONStorableString NewTextField(
             this MVRScript script,

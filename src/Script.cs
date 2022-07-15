@@ -14,20 +14,20 @@ namespace LiveReload
 
         private static string _mainDir;
         private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
-        private JSONStorableFloat _checkInterval;
+        private bool _pluginsListBuilt;
 
-        private float _time;
+        private FrequencyRunner _pluginsCheckRunner;
 
         public void Update()
         {
+            if(!_pluginsListBuilt)
+            {
+                return;
+            }
+
             try
             {
-                _time += Time.deltaTime;
-                if(_time >= _checkInterval.val)
-                {
-                    _time -= _checkInterval.val;
-                    CheckAllPlugins();
-                }
+                _pluginsCheckRunner.Run(CheckAllPlugins);
             }
             catch(Exception e)
             {
@@ -48,8 +48,6 @@ namespace LiveReload
         {
             try
             {
-                enabled = false;
-
                 string creatorName = UserPreferences.singleton.creatorName;
                 if(creatorName == null || creatorName.Trim().Length == 0)
                 {
@@ -62,7 +60,11 @@ namespace LiveReload
                 var title = this.NewTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
                 title.dynamicText.backgroundColor = Color.clear;
                 title.dynamicText.textColor = Color.white;
-                _checkInterval = this.NewFloatSlider("Check interval (sec)", 1f, 0.5f, 2f, "F1", true);
+
+                _pluginsCheckRunner = new FrequencyRunner(1);
+
+                var spacer = CreateSpacer(true);
+                spacer.height = 120;
 
                 StartCoroutine(DeferBuildLivePluginsList());
             }
@@ -175,13 +177,13 @@ namespace LiveReload
             catch(Exception e)
             {
                 LogError($"AddPluginsFromJson: {e}");
-                yield break;
+                enabled = false;
             }
 
-            enabled = true;
+            _pluginsListBuilt = true;
         }
 
-        private void CheckAllPlugins()
+        private bool CheckAllPlugins()
         {
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
@@ -208,6 +210,8 @@ namespace LiveReload
 
                 livePlugin.CheckDiff();
             }
+
+            return true;
         }
     }
 }

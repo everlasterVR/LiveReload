@@ -3,7 +3,7 @@ using MVR.FileManagementSecure;
 
 namespace LiveReload
 {
-    internal class FileSearch
+    public class FileSearch
     {
         private readonly List<string> _excludeDirs;
         private readonly List<string> _patterns;
