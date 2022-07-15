@@ -10,6 +10,7 @@ namespace LiveReload
 {
     public class Script : MVRScript
     {
+        public static MVRScript script { get; private set; }
         public const string VERSION = "v0.0.0";
 
         private static string _mainDir;
@@ -17,6 +18,8 @@ namespace LiveReload
         private bool _pluginsListBuilt;
 
         private FrequencyRunner _pluginsCheckRunner;
+
+        public static JSONStorableBool logChanges { get; private set; }
 
         public void Update()
         {
@@ -48,6 +51,7 @@ namespace LiveReload
         {
             try
             {
+                script = this;
                 string creatorName = UserPreferences.singleton.creatorName;
                 if(creatorName == null || creatorName.Trim().Length == 0)
                 {
@@ -67,6 +71,7 @@ namespace LiveReload
                 spacer.height = 120;
 
                 StartCoroutine(DeferBuildLivePluginsList());
+                logChanges = script.NewToggle("Log detected changes", false, true);
             }
             catch(Exception e)
             {

@@ -20,9 +20,7 @@ namespace LiveReload
 
         private Dictionary<string, byte[]> _files;
         private JSONStorableString _headerText;
-        private JSONStorableBool _logReloads;
         private UIDynamic _lowerLeftSpacer;
-        private string _pluginStoreId;
         private Button _reloadButton;
         private JSONStorableString _statusText;
 
@@ -38,7 +36,7 @@ namespace LiveReload
             _pluginPath = string.Join(@"\", arr).Replace($@"\{arr[arr.Length - 1]}", "");
             _pluginDir = arr[arr.Length - 2];
 
-            _atom = SuperController.singleton.GetAtoms().Find(x => x.uid == atomUid);
+            _atom = SuperController.singleton.GetAtoms().Find(atom => atom.uid == atomUid);
             if(_atom == null)
             {
                 LogError($"atom '{atomUid}' not found in scene!");
@@ -87,7 +85,6 @@ namespace LiveReload
             headerTextField.interactable = false;
 
             monitoringOn = script.NewToggle("Monitoring on", true);
-            _logReloads = script.NewToggle("Output changes to Message Log", false);
             _statusText = script.NewTextField("Status", "", 24, 255, true);
 
             _lowerLeftSpacer = script.NewSpacer(60);
@@ -99,7 +96,6 @@ namespace LiveReload
             script.RemoveSpacer(_upperRightSpacer);
             script.RemoveTextField(_headerText);
             script.RemoveToggle(monitoringOn);
-            script.RemoveToggle(_logReloads);
             script.RemoveTextField(_statusText);
             script.RemoveSpacer(_lowerLeftSpacer);
         }
@@ -143,9 +139,9 @@ namespace LiveReload
                     _statusText.val =
                         $"{path.Replace(_pluginPath, "").TrimStart('\\')} changed\n" +
                         $"{_statusText.val}";
-                    if(_logReloads.val)
+                    if(Script.logChanges.val)
                     {
-                        SuperController.LogMessage($"{_pluginDir} reloading: {path.Replace(_pluginPath, "").TrimStart('\\')} changed");
+                        SuperController.LogMessage($"{_pluginDir}: {path.Replace(_pluginPath, "").TrimStart('\\')} changed. Reloading.");
                     }
 
                     reload = true;
@@ -168,8 +164,7 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                //todo actual name parsing
-                LogError($"Error reloading plugin {_pluginStoreId} on atom {_atom.uid}: {e}");
+                LogError($"Error reloading plugin {_pluginFullPath} on atom {_atom.uid}: {e}");
             }
         }
 
