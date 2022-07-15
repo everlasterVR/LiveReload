@@ -17,7 +17,7 @@ namespace LiveReload
         private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
         private bool _pluginsListBuilt;
 
-        public static JSONStorableBool logChanges { get; private set; }
+        public static JSONStorableBool logChangesJsb { get; private set; }
 
         public override void Init()
         {
@@ -37,16 +37,24 @@ namespace LiveReload
                 title.dynamicText.backgroundColor = Color.clear;
                 title.dynamicText.textColor = Color.white;
 
-                var spacer = CreateSpacer(true);
-                spacer.height = 120;
+                CreateLogDetectedChangesToggle();
+                var spacer = CreateSpacer();
+                spacer.height = 10;
 
                 StartCoroutine(DeferBuildLivePluginsList());
-                logChanges = script.NewToggle("Log detected changes", false, true);
             }
             catch(Exception e)
             {
                 LogError($"Init: {e}");
             }
+        }
+
+        private void CreateLogDetectedChangesToggle()
+        {
+            logChangesJsb = new JSONStorableBool("logDetectedChanges", false);
+            var logChangesToggle = CreateToggle(logChangesJsb);
+            logChangesToggle.label = "Log Detected Changes";
+            RegisterBool(logChangesJsb);
         }
 
         private Dictionary<string, List<string>> FindPluginsInSceneJson(JSONArray atomsJSONArray)
@@ -148,7 +156,6 @@ namespace LiveReload
                         if(existingLivePlugin == null)
                         {
                             var livePlugin = new LivePlugin(plugin, atomUid);
-                            livePlugin.CreateMonitorToggle();
                             if(livePlugin.monitorJsb.val)
                             {
                                 livePlugin.TryFindReloadButton();

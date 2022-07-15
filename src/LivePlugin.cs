@@ -22,6 +22,7 @@ namespace LiveReload
         private Button _reloadButton;
         public JSONStorableBool monitorJsb;
 
+        public bool waitingForUIOpened { get; private set; }
         public string Uid() => $"{_pluginFullPath}:{_atom.uid}";
 
         public LivePlugin(string pluginFullPath, string atomUid)
@@ -59,11 +60,10 @@ namespace LiveReload
             );
 
             waitingForUIOpened = false;
+            CreateMonitorToggle();
         }
 
-        public bool waitingForUIOpened { get; private set; }
-
-        public void CreateMonitorToggle()
+        private void CreateMonitorToggle()
         {
             monitorJsb = new JSONStorableBool($"monitor{_atom.uid}{_pluginDir}", true);
             var monitorToggle = Script.script.CreateToggle(monitorJsb);
@@ -114,7 +114,7 @@ namespace LiveReload
                 if(contents != null && !contents.SequenceEqual(_files[path]))
                 {
                     _files[path] = contents;
-                    if(Script.logChanges.val)
+                    if(Script.logChangesJsb.val)
                     {
                         SuperController.LogMessage($"{_pluginDir}: {path.Replace(_pluginPath, "").TrimStart('\\')} changed. Reloading.");
                     }
