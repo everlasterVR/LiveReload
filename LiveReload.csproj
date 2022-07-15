@@ -79,6 +79,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\Extensions\DictionaryExtensions.cs" />
     <Compile Include="src\FileSearch.cs" />
     <Compile Include="src\LivePlugin.cs" />
     <Compile Include="src\Utils.cs" />

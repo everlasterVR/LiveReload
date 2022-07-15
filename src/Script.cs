@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using SimpleJSON;
 using UnityEngine;
 using static LiveReload.Utils;
@@ -63,7 +64,7 @@ namespace LiveReload
                 title.dynamicText.textColor = Color.white;
                 _checkInterval = this.NewFloatSlider("Check interval (sec)", 1f, 0.5f, 2f, "F1", true);
 
-                StartCoroutine(BuildUserPluginsList());
+                StartCoroutine(DeferBuildLivePluginsList());
             }
             catch(Exception e)
             {
@@ -71,49 +72,23 @@ namespace LiveReload
             }
         }
 
-        private Dictionary<string, List<string>> FindPluginsInSceneJson(JSONArray atoms)
+        private Dictionary<string, List<string>> FindPluginsInSceneJson(JSONArray atomsJSONArray)
         {
             var result = new Dictionary<string, List<string>>();
             try
             {
-                foreach(JSONClass atom in atoms)
+                foreach(JSONClass atomJSON in atomsJSONArray)
                 {
                     // skip other atoms if not added as scene/session plugin
-                    if(containingAtom.name != "CoreControl" && containingAtom.uid != atom["id"].Value)
+                    if(containingAtom.name != "CoreControl" && containingAtom.uid != atomJSON["id"].Value)
                     {
                         continue;
                     }
 
-                    var storables = atom["storables"].AsArray;
-                    foreach(JSONClass storable in storables)
+                    var plugins = FindPluginsInAtomJson(atomJSON);
+                    if(plugins != null && plugins.Any())
                     {
-                        if(storable["id"].Value != "PluginManager")
-                        {
-                            continue;
-                        }
-
-                        var pluginsObj = storable["plugins"].AsObject;
-                        foreach(string key in pluginsObj.Keys)
-                        {
-                            string pluginFullPath = pluginsObj[key].Value;
-                            //dev
-                            if(pluginFullPath.Contains("LiveReload"))
-                            {
-                                continue;
-                            }
-
-                            if(pluginFullPath.StartsWith(_mainDir.Replace(@"\", "/")))
-                            {
-                                if(result.ContainsKey(atom["id"]))
-                                {
-                                    result[atom["id"]].Add(pluginFullPath);
-                                }
-                                else
-                                {
-                                    result.Add(atom["id"].Value, new List<string> { pluginFullPath });
-                                }
-                            }
-                        }
+                        result[atomJSON["id"]] = plugins;
                     }
                 }
 
@@ -127,32 +102,65 @@ namespace LiveReload
             return null;
         }
 
-        private IEnumerator BuildUserPluginsList()
+        private static List<string> FindPluginsInAtomJson(JSONClass atomJSON)
+        {
+            var managerJSON = FindPluginManagerJson(atomJSON["storables"].AsArray);
+            if(managerJSON != null)
+            {
+                return FindPluginsInManagerJSON(managerJSON);
+            }
+
+            return null;
+        }
+
+        private static JSONClass FindPluginManagerJson(JSONArray storablesJSONArray)
+        {
+            foreach(JSONClass storableJSON in storablesJSONArray)
+            {
+                if(storableJSON["id"].Value == "PluginManager")
+                {
+                    return storableJSON;
+                }
+            }
+
+            return null;
+        }
+
+        private static List<string> FindPluginsInManagerJSON(JSONClass managerJson)
+        {
+            var result = new List<string>();
+            var pluginsObj = managerJson["plugins"].AsObject;
+            foreach(string key in pluginsObj.Keys)
+            {
+                string pluginFullPath = pluginsObj[key].Value;
+                if(
+                    !pluginFullPath.Contains(nameof(LiveReload)) &&
+                    pluginFullPath.StartsWith(_mainDir.Replace(@"\", "/"))
+                )
+                {
+                    result.Add(pluginFullPath);
+                }
+            }
+
+            return result;
+        }
+
+        private IEnumerator DeferBuildLivePluginsList()
         {
             yield return new WaitForEndOfFrame();
 
-            var sceneJson = SuperController.singleton.GetSaveJSON().AsObject;
-            var pluginsByAtomInJson = FindPluginsInSceneJson(sceneJson["atoms"].AsArray);
+            var sceneJSON = SuperController.singleton.GetSaveJSON().AsObject;
+            var pluginsByAtom = FindPluginsInSceneJson(sceneJSON["atoms"].AsArray);
 
-            if(pluginsByAtomInJson == null)
-            {
-                yield break;
-            }
-
-            AddPluginsFromJson(pluginsByAtomInJson);
-
-            enabled = true;
-        }
-
-        private void AddPluginsFromJson(Dictionary<string, List<string>> json)
-        {
             try
             {
-                foreach(var atomPlugins in json)
+                foreach(var kvp in pluginsByAtom)
                 {
-                    foreach(string pluginPath in atomPlugins.Value)
+                    string atomName = kvp.Key;
+                    var atomPlugins = kvp.Value;
+                    foreach(string plugin in atomPlugins)
                     {
-                        var livePlugin = new LivePlugin(pluginPath, atomPlugins.Key);
+                        var livePlugin = new LivePlugin(plugin, atomName);
                         livePlugin.AddToUI(this);
                         if(livePlugin.monitoringOn.val)
                         {
@@ -167,8 +175,10 @@ namespace LiveReload
             catch(Exception e)
             {
                 LogError($"AddPluginsFromJson: {e}");
-                throw;
+                yield break;
             }
+
+            enabled = true;
         }
 
         private void CheckAllPlugins()
