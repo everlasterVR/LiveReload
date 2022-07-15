@@ -1,32 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace LiveReload
 {
     internal static class Utils
     {
-        public static List<MVRScript> FindPluginsOnAtom(Atom atom)
-        {
-            var plugins = new List<MVRScript>();
-            foreach(string storableId in atom.GetStorableIDs())
-            {
-                var storable = atom.GetStorableByID(storableId);
-                try
-                {
-                    var plugin = (MVRScript) storable;
-                    plugins.Add(plugin);
-                }
-                catch(Exception)
-                {
-                    // ignored
-                }
-            }
-
-            return plugins;
-        }
-
         public static void LogError(string message, string name = "") =>
             SuperController.LogError(Format(message, name));
 

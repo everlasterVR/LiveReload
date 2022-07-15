@@ -1,4 +1,4 @@
 src\FileSearch.cs
 src\LivePlugin.cs
 src\Script.cs
-src\Utils.cs
+src\Utils\Utils.cs
