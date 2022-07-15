@@ -17,27 +17,7 @@ namespace LiveReload
         private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
         private bool _pluginsListBuilt;
 
-        private FrequencyRunner _checkPluginsRunner;
-
         public static JSONStorableBool logChanges { get; private set; }
-
-        public void Update()
-        {
-            if(!_pluginsListBuilt)
-            {
-                return;
-            }
-
-            try
-            {
-                _checkPluginsRunner.Run(CheckAllPlugins);
-            }
-            catch(Exception e)
-            {
-                LogError($"Update: {e}. Disabling {nameof(LiveReload)}.");
-                enabled = false;
-            }
-        }
 
         public override void Init()
         {
@@ -60,7 +40,6 @@ namespace LiveReload
                 var spacer = CreateSpacer(true);
                 spacer.height = 120;
 
-                _checkPluginsRunner = new FrequencyRunner(1);
                 StartCoroutine(DeferBuildLivePluginsList());
                 logChanges = script.NewToggle("Log detected changes", false, true);
             }
@@ -147,7 +126,9 @@ namespace LiveReload
         {
             yield return new WaitForEndOfFrame();
             BuildLivePluginsList();
-            _pluginsListBuilt = true;
+
+            InvokeRepeating(nameof(BuildLivePluginsList), 3, 3);
+            InvokeRepeating(nameof(CheckAllPlugins), 1, 1);
         }
 
         private void BuildLivePluginsList()
@@ -159,19 +140,23 @@ namespace LiveReload
             {
                 foreach(var kvp in pluginsByAtom)
                 {
-                    string atomName = kvp.Key;
+                    string atomUid = kvp.Key;
                     var atomPlugins = kvp.Value;
                     foreach(string plugin in atomPlugins)
                     {
-                        var livePlugin = new LivePlugin(plugin, atomName);
-                        livePlugin.CreateMonitorToggle();
-                        if(livePlugin.monitorJsb.val)
+                        var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{plugin}:{atomUid}");
+                        if(existingLivePlugin == null)
                         {
-                            livePlugin.TryFindReloadButton();
-                            livePlugin.FindFiles();
-                        }
+                            var livePlugin = new LivePlugin(plugin, atomUid);
+                            livePlugin.CreateMonitorToggle();
+                            if(livePlugin.monitorJsb.val)
+                            {
+                                livePlugin.TryFindReloadButton();
+                                livePlugin.FindFiles();
+                            }
 
-                        _livePlugins.Add(livePlugin);
+                            _livePlugins.Add(livePlugin);
+                        }
                     }
                 }
             }
@@ -182,7 +167,7 @@ namespace LiveReload
             }
         }
 
-        private bool CheckAllPlugins()
+        private void CheckAllPlugins()
         {
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
@@ -202,8 +187,6 @@ namespace LiveReload
                     livePlugin.CheckDiff();
                 }
             }
-
-            return true;
         }
     }
 }

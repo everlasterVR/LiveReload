@@ -22,6 +22,8 @@ namespace LiveReload
         private Button _reloadButton;
         public JSONStorableBool monitorJsb;
 
+        public string Uid() => $"{_pluginFullPath}:{_atom.uid}";
+
         public LivePlugin(string pluginFullPath, string atomUid)
         {
             _pluginFullPath = pluginFullPath;
