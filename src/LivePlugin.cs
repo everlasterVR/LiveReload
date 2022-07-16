@@ -99,6 +99,7 @@ namespace LiveReload
         {
             var paths = new List<string>(_files.Keys);
             bool reload = false;
+            var reloadedFiles = new List<string>();
 
             foreach(string path in paths)
             {
@@ -115,17 +116,21 @@ namespace LiveReload
                 if(contents != null && !contents.SequenceEqual(_files[path]))
                 {
                     _files[path] = contents;
+                    reload = true;
                     if(Script.logChangesJsb.val)
                     {
-                        SuperController.LogMessage($"{_pluginDir}: {path.Replace(_pluginPath, "").TrimStart('\\')} changed. Reloading.");
+                        reloadedFiles.Add(path.Replace(_pluginPath, "").TrimStart('\\'));
                     }
-
-                    reload = true;
                 }
             }
 
             if(reload)
             {
+                if(Script.logChangesJsb.val)
+                {
+                    SuperController.LogMessage($"Reloading {_pluginDir}. Changed: {string.Join(", ", reloadedFiles.ToArray())}");
+                }
+
                 Reload();
             }
         }
