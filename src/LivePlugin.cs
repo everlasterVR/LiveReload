@@ -76,6 +76,7 @@ namespace LiveReload
 
         public void RemoveFromUI()
         {
+            Script.script.DeregisterBool(monitorJsb);
             Script.script.RemoveToggle(monitorJsb);
         }
 
