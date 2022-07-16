@@ -54,7 +54,6 @@ namespace LiveReload
                 }
             );
 
-            waitingForUIOpened = false;
             CreateMonitorToggle();
 
             if(monitorJsb.val)
@@ -158,7 +157,7 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Unable to find reload button for plugin: {e}");
+                LogError($"Error trying to find reload button for {_pluginFullPath} on atom {_atomUid}: {e}");
             }
         }
 
@@ -174,6 +173,17 @@ namespace LiveReload
 
         private Button FindReloadButton()
         {
+            if(_manager.pluginListPanel == null)
+            {
+                if(!waitingForUIOpened)
+                {
+                    LogMessage($"Open the UI of atom '{_atomUid}' once to enable live reloading for {_pluginFullPath}.");
+                    waitingForUIOpened = true;
+                }
+
+                return null;
+            }
+
             foreach(Transform transform in _manager.pluginListPanel)
             {
                 var urlTransform = transform.Find("Panel").Find("URL");
