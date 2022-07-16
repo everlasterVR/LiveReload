@@ -23,7 +23,7 @@ namespace LiveReload
         public JSONStorableBool monitorJsb;
 
         public bool waitingForUIOpened { get; private set; }
-        public string Uid() => $"{_pluginFullPath}:{_atom.uid}";
+        public string Uid() => $"{_atom.uid}:{_pluginFullPath}";
 
         public LivePlugin(string pluginFullPath, string atomUid)
         {

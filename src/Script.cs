@@ -18,6 +18,8 @@ namespace LiveReload
 
         public static JSONStorableBool logChangesJsb { get; private set; }
 
+        private bool _isSessionPlugin;
+
         public override void Init()
         {
             try
@@ -30,6 +32,7 @@ namespace LiveReload
                     return;
                 }
 
+                _isSessionPlugin = containingAtom.name == "CoreControl" && string.IsNullOrEmpty(containingAtom.uid);
                 _mainDir = $@"Custom\Scripts\{creatorName}";
 
                 var title = TitleTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
@@ -71,11 +74,12 @@ namespace LiveReload
             RegisterBool(logChangesJsb);
         }
 
-        private Dictionary<string, List<string>> FindPluginsInSceneJson(JSONArray atomsJSONArray)
+        private Dictionary<string, List<string>> FindPluginsInSceneJSON()
         {
-            var result = new Dictionary<string, List<string>>();
             try
             {
+                var result = new Dictionary<string, List<string>>();
+                var atomsJSONArray = SuperController.singleton.GetSaveJSON().AsObject["atoms"].AsArray;
                 foreach(JSONClass atomJSON in atomsJSONArray)
                 {
                     // skip other atoms if not added as scene/session plugin
@@ -103,7 +107,7 @@ namespace LiveReload
 
         private static List<string> FindPluginsInAtomJson(JSONClass atomJSON)
         {
-            var managerJSON = FindPluginManagerJson(atomJSON["storables"].AsArray);
+            var managerJSON = FindPluginManagerJSON(atomJSON["storables"].AsArray);
             if(managerJSON != null)
             {
                 return FindPluginsInManagerJSON(managerJSON);
@@ -112,7 +116,7 @@ namespace LiveReload
             return null;
         }
 
-        private static JSONClass FindPluginManagerJson(JSONArray storablesJSONArray)
+        private static JSONClass FindPluginManagerJSON(JSONArray storablesJSONArray)
         {
             foreach(JSONClass storableJSON in storablesJSONArray)
             {
@@ -155,8 +159,7 @@ namespace LiveReload
 
         private void BuildLivePluginsList()
         {
-            var sceneJSON = SuperController.singleton.GetSaveJSON().AsObject;
-            var pluginsByAtom = FindPluginsInSceneJson(sceneJSON["atoms"].AsArray);
+            var pluginsByAtom = FindPluginsInSceneJSON();
 
             try
             {
@@ -166,7 +169,7 @@ namespace LiveReload
                     var atomPlugins = kvp.Value;
                     foreach(string plugin in atomPlugins)
                     {
-                        var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{plugin}:{atomUid}");
+                        var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{atomUid}:{plugin}");
                         if(existingLivePlugin == null)
                         {
                             var livePlugin = new LivePlugin(plugin, atomUid);

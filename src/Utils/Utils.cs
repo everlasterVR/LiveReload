@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using System.ComponentModel;
 
 namespace LiveReload
 {
@@ -13,5 +12,17 @@ namespace LiveReload
 
         private static string Format(string message, string name) =>
             $"{nameof(LiveReload)} {Script.VERSION}: {message}{(string.IsNullOrEmpty(name) ? "" : $" [{name}]")}";
+
+        // ReSharper disable once UnusedMember.Global
+        public static string ObjectPropertiesString(object obj)
+        {
+            string result = "";
+            foreach(PropertyDescriptor descriptor in TypeDescriptor.GetProperties(obj))
+            {
+                result += $"{descriptor.Name} = {descriptor.GetValue(obj)}\n";
+            }
+
+            return result;
+        }
     }
 }
