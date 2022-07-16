@@ -10,7 +10,7 @@ namespace LiveReload
 {
     public class LivePlugin
     {
-        private readonly Atom _atom;
+        private readonly string _atomUid;
         private readonly MVRPluginManager _manager;
 
         private readonly FileSearch _fileSearch;
@@ -23,23 +23,18 @@ namespace LiveReload
         public JSONStorableBool monitorJsb;
 
         public bool waitingForUIOpened { get; private set; }
-        public string Uid() => $"{_atom.uid}:{_pluginFullPath}";
+        public string Uid() => $"{_atomUid}:{_pluginFullPath}";
 
-        public LivePlugin(string pluginFullPath, string atomUid)
+        public LivePlugin(string atomUid, string pluginFullPath, MVRPluginManager manager)
         {
             _pluginFullPath = pluginFullPath;
+            _atomUid = atomUid;
+            _manager = manager;
+
             string[] arr = _pluginFullPath.Split('/');
             _pluginPath = string.Join(@"\", arr).Replace($@"\{arr[arr.Length - 1]}", "");
             _pluginDir = arr[arr.Length - 2];
 
-            _atom = SuperController.singleton.GetAtoms().Find(atom => atom.uid == atomUid);
-            if(_atom == null)
-            {
-                LogError($"atom '{atomUid}' not found in scene!");
-                return;
-            }
-
-            _manager = _atom.GetComponentInChildren<MVRPluginManager>();
             _fileSearch = new FileSearch(
                 _pluginPath,
                 //todo configurable
@@ -61,15 +56,21 @@ namespace LiveReload
 
             waitingForUIOpened = false;
             CreateMonitorToggle();
+
+            if(monitorJsb.val)
+            {
+                TryFindReloadButton();
+                FindFiles();
+            }
         }
 
         private void CreateMonitorToggle()
         {
-            monitorJsb = new JSONStorableBool($"monitor{_atom.uid}{_pluginDir}", true);
+            monitorJsb = new JSONStorableBool($"monitor{_atomUid}{_pluginDir}", true);
             var monitorToggle = Script.script.CreateToggle(monitorJsb);
-            monitorToggle.label = _atom.name == "CoreControl"
-                ? _pluginDir
-                : $"{_atom.uid}: {_pluginDir}";
+            monitorToggle.label = _atomUid == "CoreControl"
+                ? $"Scene: {_pluginDir}"
+                : $"{_atomUid}: {_pluginDir}";
             Script.script.RegisterBool(monitorJsb);
         }
 
@@ -139,7 +140,7 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Error reloading plugin {_pluginFullPath} on atom {_atom.uid}: {e}");
+                LogError($"Error reloading plugin {_pluginFullPath} on {_atomUid}: {e}");
             }
         }
 

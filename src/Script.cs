@@ -157,9 +157,45 @@ namespace LiveReload
             InvokeRepeating(nameof(CheckAllPlugins), 1, 1);
         }
 
+        private MVRPluginManager FindManager(string atomUid)
+        {
+            MVRPluginManager result = null;
+            if(_isSessionPlugin && atomUid == "Session")
+            {
+                result = manager;
+            }
+            else if(atomUid == "CoreControl")
+            {
+                var foundAtom = SuperController.singleton.GetAtoms().Find(atom => atom.uid == atomUid);
+                var managers = foundAtom.GetComponentsInChildren<MVRPluginManager>();
+                foreach(var mgr in managers)
+                {
+                    if(mgr.name == "ScenePluginManager")
+                    {
+                        result = mgr;
+                    }
+                }
+            }
+            else
+            {
+                var foundAtom = SuperController.singleton.GetAtoms().Find(atom => atom.uid == atomUid);
+                result = foundAtom.GetComponentInChildren<MVRPluginManager>();
+            }
+
+            return result;
+        }
+
         private void BuildLivePluginsList()
         {
             var pluginsByAtom = FindPluginsInSceneJSON();
+            if(_isSessionPlugin)
+            {
+                var sessionPlugins = FindPluginsInManagerJSON(manager.GetJSON());
+                if(sessionPlugins.Any())
+                {
+                    pluginsByAtom["Session"] = sessionPlugins;
+                }
+            }
 
             try
             {
@@ -167,19 +203,12 @@ namespace LiveReload
                 {
                     string atomUid = kvp.Key;
                     var atomPlugins = kvp.Value;
-                    foreach(string plugin in atomPlugins)
+                    foreach(string pluginFullPath in atomPlugins)
                     {
-                        var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{atomUid}:{plugin}");
+                        var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{atomUid}:{pluginFullPath}");
                         if(existingLivePlugin == null)
                         {
-                            var livePlugin = new LivePlugin(plugin, atomUid);
-                            if(livePlugin.monitorJsb.val)
-                            {
-                                livePlugin.TryFindReloadButton();
-                                livePlugin.FindFiles();
-                            }
-
-                            _livePlugins.Add(livePlugin);
+                            _livePlugins.Add(new LivePlugin(atomUid, pluginFullPath, FindManager(atomUid)));
                         }
                     }
                 }
