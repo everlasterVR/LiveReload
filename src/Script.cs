@@ -15,7 +15,6 @@ namespace LiveReload
 
         private static string _mainDir;
         private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
-        private bool _pluginsListBuilt;
 
         public static JSONStorableBool logChangesJsb { get; private set; }
 
@@ -33,7 +32,7 @@ namespace LiveReload
 
                 _mainDir = $@"Custom\Scripts\{creatorName}";
 
-                var title = this.NewTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
+                var title = TitleTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
                 title.dynamicText.backgroundColor = Color.clear;
                 title.dynamicText.textColor = Color.white;
 
@@ -47,6 +46,21 @@ namespace LiveReload
             {
                 LogError($"Init: {e}");
             }
+        }
+
+        private JSONStorableString TitleTextField(
+            string paramName,
+            string initialValue,
+            int fontSize,
+            int height = 120,
+            bool rightSide = false
+        )
+        {
+            var storable = new JSONStorableString(paramName, initialValue);
+            var textField = CreateTextField(storable, rightSide);
+            textField.UItext.fontSize = fontSize;
+            textField.height = height;
+            return storable;
         }
 
         private void CreateLogDetectedChangesToggle()
