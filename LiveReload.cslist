@@ -1,4 +1,5 @@
 src\FileSearch.cs
 src\LivePlugin.cs
 src\Script.cs
+src\Utils\FrequencyRunner.cs
 src\Utils\Utils.cs

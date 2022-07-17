@@ -82,6 +82,7 @@
     <Compile Include="src\FileSearch.cs" />
     <Compile Include="src\LivePlugin.cs" />
     <Compile Include="src\Script.cs" />
+    <Compile Include="src\Utils\FrequencyRunner.cs" />
     <Compile Include="src\Utils\Utils.cs" />
   </ItemGroup>
   <ItemGroup>

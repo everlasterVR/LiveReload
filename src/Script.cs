@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SimpleJSON;
 using UnityEngine;
-using static LiveReload.Utils;
+using static Utils;
 
 namespace LiveReload
 {
@@ -14,11 +14,14 @@ namespace LiveReload
         public const string VERSION = "v0.0.0";
 
         private static string _mainDir;
-        private readonly List<LivePlugin> _livePlugins = new List<LivePlugin>();
+        private List<LivePlugin> _livePlugins;
+        private FrequencyRunner _buildRunner;
+        private FrequencyRunner _checkRunner;
 
         public static JSONStorableBool logChangesJsb { get; private set; }
 
         private bool _isSessionPlugin;
+        private bool _initDone;
 
         public override void Init()
         {
@@ -42,6 +45,10 @@ namespace LiveReload
                 CreateLogDetectedChangesToggle();
                 var spacer = CreateSpacer();
                 spacer.height = 10;
+
+                _livePlugins = new List<LivePlugin>();
+                _buildRunner = new FrequencyRunner(3);
+                _checkRunner = new FrequencyRunner(1);
 
                 StartCoroutine(DeferBuildLivePluginsList());
             }
@@ -152,9 +159,7 @@ namespace LiveReload
         {
             yield return new WaitForEndOfFrame();
             BuildLivePluginsList();
-
-            InvokeRepeating(nameof(BuildLivePluginsList), 3, 3);
-            InvokeRepeating(nameof(CheckAllPlugins), 1, 1);
+            _initDone = true;
         }
 
         private MVRPluginManager FindManager(string atomUid)
@@ -187,6 +192,11 @@ namespace LiveReload
 
         private void BuildLivePluginsList()
         {
+            if(!enabled || SuperController.singleton.isLoading)
+            {
+                return;
+            }
+
             var pluginsByAtom = FindPluginsInSceneJSON();
             if(_isSessionPlugin)
             {
@@ -222,6 +232,11 @@ namespace LiveReload
 
         private void CheckAllPlugins()
         {
+            if(!enabled)
+            {
+                return;
+            }
+
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
                 var livePlugin = _livePlugins[i];
@@ -239,6 +254,25 @@ namespace LiveReload
                 {
                     livePlugin.CheckDiff();
                 }
+            }
+        }
+
+        private void Update()
+        {
+            if(!_initDone)
+            {
+                return;
+            }
+
+            try
+            {
+                _buildRunner.Run(BuildLivePluginsList);
+                _checkRunner.Run(CheckAllPlugins);
+            }
+            catch(Exception e)
+            {
+                LogError($"Update: {e}");
+                enabled = false;
             }
         }
     }

@@ -4,7 +4,7 @@ using System.Linq;
 using MVR.FileManagementSecure;
 using UnityEngine;
 using UnityEngine.UI;
-using static LiveReload.Utils;
+using static Utils;
 
 namespace LiveReload
 {
@@ -139,7 +139,7 @@ namespace LiveReload
         {
             try
             {
-                _fileSearch.FindFiles(_files); //ensure any new files added before this reload will be monitored for changes
+                _fileSearch.FindFiles(_files); // ensure any new files added before this reload will be monitored for changes
                 _reloadButton.onClick.Invoke();
                 _reloadButton = FindReloadButton(); // ensure reload button is correct after reloading plugin
             }
