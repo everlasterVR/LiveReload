@@ -22,6 +22,7 @@ namespace LiveReload
 
         private bool _isSessionPlugin;
         private bool _initDone;
+        private bool _isFocused;
 
         public override void Init()
         {
@@ -257,9 +258,14 @@ namespace LiveReload
             }
         }
 
+        private void OnApplicationFocus(bool isFocused)
+        {
+            _isFocused = isFocused;
+        }
+
         private void Update()
         {
-            if(!_initDone)
+            if(!_initDone || !_isFocused)
             {
                 return;
             }
