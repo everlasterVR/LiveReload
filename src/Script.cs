@@ -15,8 +15,7 @@ namespace LiveReload
 
         private static string _mainDir;
         private List<LivePlugin> _livePlugins;
-        private FrequencyRunner _buildRunner;
-        private FrequencyRunner _checkRunner;
+        private FrequencyRunner _runner;
 
         public static JSONStorableBool logChangesJsb { get; private set; }
 
@@ -48,10 +47,9 @@ namespace LiveReload
                 spacer.height = 10;
 
                 _livePlugins = new List<LivePlugin>();
-                _buildRunner = new FrequencyRunner(3);
-                _checkRunner = new FrequencyRunner(1);
+                _runner = new FrequencyRunner(1);
 
-                StartCoroutine(DeferBuildLivePluginsList());
+                StartCoroutine(DeferInit());
             }
             catch(Exception e)
             {
@@ -156,9 +154,14 @@ namespace LiveReload
             return result;
         }
 
-        private IEnumerator DeferBuildLivePluginsList()
+        private IEnumerator DeferInit()
         {
             yield return new WaitForEndOfFrame();
+            while(SuperController.singleton.isLoading)
+            {
+                yield return null;
+            }
+
             BuildLivePluginsList();
             _initDone = true;
         }
@@ -193,23 +196,18 @@ namespace LiveReload
 
         private void BuildLivePluginsList()
         {
-            if(!enabled || SuperController.singleton.isLoading)
-            {
-                return;
-            }
-
-            var pluginsByAtom = FindPluginsInSceneJSON();
-            if(_isSessionPlugin)
-            {
-                var sessionPlugins = FindPluginsInManagerJSON(manager.GetJSON());
-                if(sessionPlugins.Any())
-                {
-                    pluginsByAtom["Session"] = sessionPlugins;
-                }
-            }
-
             try
             {
+                var pluginsByAtom = FindPluginsInSceneJSON();
+                if(_isSessionPlugin)
+                {
+                    var sessionPlugins = FindPluginsInManagerJSON(manager.GetJSON());
+                    if(sessionPlugins.Any())
+                    {
+                        pluginsByAtom["Session"] = sessionPlugins;
+                    }
+                }
+
                 foreach(var kvp in pluginsByAtom)
                 {
                     string atomUid = kvp.Key;
@@ -226,18 +224,19 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"AddPluginsFromJson: {e}");
+                LogError($"BuildLivePluginsList: {e}");
                 enabled = false;
             }
         }
 
+        private IEnumerator DeferBuildLivePluginsList()
+        {
+            yield return new WaitForSecondsRealtime(0.67f);
+            BuildLivePluginsList();
+        }
+
         private void CheckAllPlugins()
         {
-            if(!enabled)
-            {
-                return;
-            }
-
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
                 var livePlugin = _livePlugins[i];
@@ -272,8 +271,11 @@ namespace LiveReload
 
             try
             {
-                _buildRunner.Run(BuildLivePluginsList);
-                _checkRunner.Run(CheckAllPlugins);
+                _runner.Run(() =>
+                {
+                    CheckAllPlugins();
+                    StartCoroutine(DeferBuildLivePluginsList());
+                });
             }
             catch(Exception e)
             {
