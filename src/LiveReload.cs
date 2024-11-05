@@ -7,101 +7,55 @@ using UnityEngine;
 
 namespace everlaster
 {
-    public class LiveReload : MVRScript
+    sealed class LiveReload : Script
     {
-        public const string VERSION = "v0.0.0";
-        bool _initDone;
-        bool _isFocused;
+        public override bool ShouldIgnore() => false;
+        public override string className => nameof(LiveReload);
+
+        protected override void CreateUI()
+        {
+            var textField = CreateTextField(new JSONStorableString("title", $"\n{nameof(LiveReload)} {VERSION}"));
+            textField.UItext.fontSize = 36;
+            textField.height = 120;
+            textField.backgroundColor = Color.clear;
+            textField.DisableScroll();
+
+            CreateSpacer().height = 10;
+            CreateToggle(logChangesJsb).label = logChangesJsb.label;
+        }
 
         bool _isSessionPlugin;
         List<LivePlugin> _livePlugins;
 
         string _mainDir;
-        FrequencyRunner _runner;
+        readonly Clock _clock = new Clock(1);
 
-        public JSONStorableBool logChangesJsb { get; private set; }
+        public StorableBool logChangesJsb { get; private set; }
 
-        void Update()
+        protected override void OnInit()
         {
-            if(!_initDone || !_isFocused)
+            string creatorName = UserPreferences.singleton.creatorName;
+            if(creatorName == null || creatorName.Trim().Length == 0)
             {
+                OnInitError("Set your creator name in user preferences and reload the plugin.", false);
                 return;
             }
 
-            try
-            {
-                _runner.Run(() =>
-                {
-                    CheckAllPlugins();
-                    StartCoroutine(DeferBuildLivePluginsList());
-                });
-            }
-            catch(Exception e)
-            {
-                Utils.LogError($"Update: {e}");
-                enabled = false;
-            }
+            _isSessionPlugin = containingAtom.type == "SessionPluginManager";
+            _mainDir = $@"Custom\Scripts\{creatorName}";
+
+            logChangesJsb = new StorableBool("logDetectedChanges", "Log Detected Changes", false);
+            RegisterBool(logChangesJsb);
+
+            _livePlugins = new List<LivePlugin>();
+            BuildLivePluginsList();
+            initialized = true;
         }
 
+        bool _isFocused;
         void OnApplicationFocus(bool isFocused)
         {
             _isFocused = isFocused;
-        }
-
-        public override void Init()
-        {
-            try
-            {
-                string creatorName = UserPreferences.singleton.creatorName;
-                if(creatorName == null || creatorName.Trim().Length == 0)
-                {
-                    Utils.LogError("Set your creator name in user preferences and reload the plugin.");
-                    return;
-                }
-
-                _isSessionPlugin = containingAtom.type == "SessionPluginManager";
-                _mainDir = $@"Custom\Scripts\{creatorName}";
-
-                var title = TitleTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
-                title.dynamicText.backgroundColor = Color.clear;
-                title.dynamicText.textColor = Color.white;
-
-                CreateLogDetectedChangesToggle();
-                var spacer = CreateSpacer();
-                spacer.height = 10;
-
-                _livePlugins = new List<LivePlugin>();
-                _runner = new FrequencyRunner(1);
-
-                StartCoroutine(DeferInit());
-            }
-            catch(Exception e)
-            {
-                Utils.LogError($"Init: {e}");
-            }
-        }
-
-        JSONStorableString TitleTextField(
-            string paramName,
-            string initialValue,
-            int fontSize,
-            int height = 120,
-            bool rightSide = false
-        )
-        {
-            var storable = new JSONStorableString(paramName, initialValue);
-            var textField = CreateTextField(storable, rightSide);
-            textField.UItext.fontSize = fontSize;
-            textField.height = height;
-            return storable;
-        }
-
-        void CreateLogDetectedChangesToggle()
-        {
-            logChangesJsb = new JSONStorableBool("logDetectedChanges", false);
-            var logChangesToggle = CreateToggle(logChangesJsb);
-            logChangesToggle.label = "Log Detected Changes";
-            RegisterBool(logChangesJsb);
         }
 
         Dictionary<string, List<string>> FindPluginsInSceneJSON()
@@ -129,7 +83,7 @@ namespace everlaster
             }
             catch(Exception e)
             {
-                Utils.LogError($"Failed reading scene JSON for plugin paths: {e}");
+                logBuilder.Exception(e);
             }
 
             return null;
@@ -146,7 +100,7 @@ namespace everlaster
             return null;
         }
 
-        JSONClass FindPluginManagerJSON(JSONArray storablesJSONArray)
+        static JSONClass FindPluginManagerJSON(JSONArray storablesJSONArray)
         {
             foreach(JSONClass storableJSON in storablesJSONArray)
             {
@@ -176,18 +130,6 @@ namespace everlaster
             }
 
             return result;
-        }
-
-        IEnumerator DeferInit()
-        {
-            yield return new WaitForEndOfFrame();
-            while(SuperController.singleton.isLoading)
-            {
-                yield return null;
-            }
-
-            BuildLivePluginsList();
-            _initDone = true;
         }
 
         MVRPluginManager FindManager(string atomUid)
@@ -248,15 +190,29 @@ namespace everlaster
             }
             catch(Exception e)
             {
-                Utils.LogError($"BuildLivePluginsList: {e}");
-                enabled = false;
+                logBuilder.Exception(e);
             }
         }
-
-        IEnumerator DeferBuildLivePluginsList()
+        void Update()
         {
-            yield return new WaitForSecondsRealtime(0.67f);
-            BuildLivePluginsList();
+            if(!initialized || !_isFocused)
+            {
+                return;
+            }
+
+            try
+            {
+                if(_clock.AtInterval())
+                {
+                    CheckAllPlugins();
+                    StartCoroutine(DeferBuildLivePluginsList());
+                }
+            }
+            catch(Exception e)
+            {
+                logBuilder.Exception(e);
+                enabled = false;
+            }
         }
 
         void CheckAllPlugins()
@@ -279,6 +235,12 @@ namespace everlaster
                     livePlugin.CheckDiff();
                 }
             }
+        }
+
+        IEnumerator DeferBuildLivePluginsList()
+        {
+            yield return new WaitForSecondsRealtime(0.67f);
+            BuildLivePluginsList();
         }
     }
 }

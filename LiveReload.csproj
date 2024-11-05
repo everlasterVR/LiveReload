@@ -82,17 +82,17 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Common\src\**\*.cs"/>
         <Compile Include="src\FileSearch.cs"/>
         <Compile Include="src\LivePlugin.cs"/>
         <Compile Include="src\LiveReload.cs"/>
-        <Compile Include="src\Utils\FrequencyRunner.cs"/>
-        <Compile Include="src\Utils\Utils.cs"/>
+        <Compile Include="src\Utils\Clock.cs" />
     </ItemGroup>
     <ItemGroup>
+        <Content Include="Common\scripts\*.sh"/>
         <Content Include=".gitignore"/>
         <Content Include="LiveReload.cslist"/>
         <Content Include="meta.json"/>
-        <Content Include="package.sh"/>
         <Content Include="README.md"/>
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>

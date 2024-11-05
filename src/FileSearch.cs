@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace everlaster
 {
-    public class FileSearch
+    sealed class FileSearch
     {
         readonly List<string> _excludeDirs;
         readonly List<string> _patterns;

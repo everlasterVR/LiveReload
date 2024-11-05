@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 namespace everlaster
 {
-    public class LivePlugin
+    sealed class LivePlugin
     {
         readonly string _atomUid;
 
@@ -146,7 +146,7 @@ namespace everlaster
             }
             catch(Exception e)
             {
-                Utils.LogError($"Error reloading plugin {_pluginFullPath} on {_atomUid}: {e}");
+                _script.logBuilder.Exception(e);
             }
         }
 
@@ -157,13 +157,13 @@ namespace everlaster
                 _reloadButton = FindReloadButton();
                 if(_reloadButton != null && waitingForUIOpened)
                 {
-                    Utils.LogMessage($"Enabled for {_pluginFullPath}.");
+                    _script.logBuilder.Message($"Enabled for {_pluginFullPath}.");
                     waitingForUIOpened = false;
                 }
             }
             catch(Exception e)
             {
-                Utils.LogError($"Error trying to find reload button for {_pluginFullPath} on atom {_atomUid}: {e}");
+                _script.logBuilder.Exception(e);
             }
         }
 
@@ -183,7 +183,7 @@ namespace everlaster
             {
                 if(!waitingForUIOpened)
                 {
-                    Utils.LogMessage($"Open the UI of atom '{_atomUid}' once to enable live reloading for {_pluginFullPath}.");
+                    _script.logBuilder.Message($"Open the UI of atom '{_atomUid}' once to enable live reloading for {_pluginFullPath}.");
                     waitingForUIOpened = true;
                 }
 
