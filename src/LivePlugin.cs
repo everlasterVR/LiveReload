@@ -1,32 +1,30 @@
-﻿using System;
+﻿using MVR.FileManagementSecure;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using MVR.FileManagementSecure;
 using UnityEngine;
 using UnityEngine.UI;
-using static Utils;
 
-namespace LiveReload
+namespace everlaster
 {
     public class LivePlugin
     {
-        private readonly string _atomUid;
-        private readonly MVRPluginManager _manager;
+        readonly string _atomUid;
 
-        private readonly FileSearch _fileSearch;
-        private readonly string _pluginDir;
-        private readonly string _pluginFullPath;
-        private readonly string _pluginPath;
+        readonly FileSearch _fileSearch;
+        readonly MVRPluginManager _manager;
+        readonly string _pluginDir;
+        readonly string _pluginFullPath;
+        readonly string _pluginPath;
+        readonly LiveReload _script;
 
-        private Dictionary<string, byte[]> _files;
-        private Button _reloadButton;
+        Dictionary<string, byte[]> _files;
+        Button _reloadButton;
         public JSONStorableBool monitorJsb;
 
-        public bool waitingForUIOpened { get; private set; }
-        public string Uid() => $"{_atomUid}:{_pluginFullPath}";
-
-        public LivePlugin(string atomUid, string pluginFullPath, MVRPluginManager manager)
+        public LivePlugin(LiveReload script, string atomUid, string pluginFullPath, MVRPluginManager manager)
         {
+            _script = script;
             _pluginFullPath = pluginFullPath;
             _atomUid = atomUid;
             _manager = manager;
@@ -63,20 +61,23 @@ namespace LiveReload
             }
         }
 
-        private void CreateMonitorToggle()
+        public bool waitingForUIOpened { get; private set; }
+        public string Uid() => $"{_atomUid}:{_pluginFullPath}";
+
+        void CreateMonitorToggle()
         {
             monitorJsb = new JSONStorableBool($"monitor{_atomUid}{_pluginDir}", true);
-            var monitorToggle = Script.script.CreateToggle(monitorJsb);
+            var monitorToggle = _script.CreateToggle(monitorJsb);
             monitorToggle.label = _atomUid == "CoreControl"
                 ? $"Scene: {_pluginDir}"
                 : $"{_atomUid}: {_pluginDir}";
-            Script.script.RegisterBool(monitorJsb);
+            _script.RegisterBool(monitorJsb);
         }
 
         public void RemoveFromUI()
         {
-            Script.script.DeregisterBool(monitorJsb);
-            Script.script.RemoveToggle(monitorJsb);
+            _script.DeregisterBool(monitorJsb);
+            _script.RemoveToggle(monitorJsb);
         }
 
         public bool Present()
@@ -117,7 +118,7 @@ namespace LiveReload
                 {
                     _files[path] = contents;
                     reload = true;
-                    if(Script.logChangesJsb.val)
+                    if(_script.logChangesJsb.val)
                     {
                         reloadedFiles.Add(path.Replace(_pluginPath, "").TrimStart('\\'));
                     }
@@ -126,7 +127,7 @@ namespace LiveReload
 
             if(reload)
             {
-                if(Script.logChangesJsb.val)
+                if(_script.logChangesJsb.val)
                 {
                     SuperController.LogMessage($"Reloading {_pluginDir}. Changed: {string.Join(", ", reloadedFiles.ToArray())}");
                 }
@@ -135,7 +136,7 @@ namespace LiveReload
             }
         }
 
-        private void Reload()
+        void Reload()
         {
             try
             {
@@ -145,7 +146,7 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Error reloading plugin {_pluginFullPath} on {_atomUid}: {e}");
+                Utils.LogError($"Error reloading plugin {_pluginFullPath} on {_atomUid}: {e}");
             }
         }
 
@@ -156,13 +157,13 @@ namespace LiveReload
                 _reloadButton = FindReloadButton();
                 if(_reloadButton != null && waitingForUIOpened)
                 {
-                    LogMessage($"Enabled for {_pluginFullPath}.");
+                    Utils.LogMessage($"Enabled for {_pluginFullPath}.");
                     waitingForUIOpened = false;
                 }
             }
             catch(Exception e)
             {
-                LogError($"Error trying to find reload button for {_pluginFullPath} on atom {_atomUid}: {e}");
+                Utils.LogError($"Error trying to find reload button for {_pluginFullPath} on atom {_atomUid}: {e}");
             }
         }
 
@@ -176,13 +177,13 @@ namespace LiveReload
             _fileSearch.FindFiles(_files);
         }
 
-        private Button FindReloadButton()
+        Button FindReloadButton()
         {
             if(_manager.pluginListPanel == null)
             {
                 if(!waitingForUIOpened)
                 {
-                    LogMessage($"Open the UI of atom '{_atomUid}' once to enable live reloading for {_pluginFullPath}.");
+                    Utils.LogMessage($"Open the UI of atom '{_atomUid}' once to enable live reloading for {_pluginFullPath}.");
                     waitingForUIOpened = true;
                 }
 

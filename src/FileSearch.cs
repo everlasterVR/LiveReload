@@ -1,16 +1,16 @@
-﻿using System.Collections.Generic;
-using MVR.FileManagementSecure;
+﻿using MVR.FileManagementSecure;
+using System.Collections.Generic;
 
-namespace LiveReload
+namespace everlaster
 {
     public class FileSearch
     {
-        private readonly List<string> _excludeDirs;
-        private readonly List<string> _patterns;
-        private readonly string _pluginPath;
-        private List<string> _fileNames;
+        readonly List<string> _excludeDirs;
+        readonly List<string> _patterns;
+        readonly string _pluginPath;
+        List<string> _fileNames;
 
-        private Dictionary<string, byte[]> _files;
+        Dictionary<string, byte[]> _files;
 
         public FileSearch(string pluginPath, List<string> patterns, List<string> excludeDirs)
         {
@@ -29,7 +29,7 @@ namespace LiveReload
             }
         }
 
-        private void SearchFiles(string path, string pattern)
+        void SearchFiles(string path, string pattern)
         {
             var fileNames = FileManagerSecure.GetFiles(path, pattern).ToList();
 

@@ -1,41 +1,65 @@
+using SimpleJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using SimpleJSON;
 using UnityEngine;
-using static Utils;
 
-namespace LiveReload
+namespace everlaster
 {
-    public class Script : MVRScript
+    public class LiveReload : MVRScript
     {
-        public static MVRScript script { get; private set; }
         public const string VERSION = "v0.0.0";
+        bool _initDone;
+        bool _isFocused;
 
-        private static string _mainDir;
-        private List<LivePlugin> _livePlugins;
-        private FrequencyRunner _runner;
+        bool _isSessionPlugin;
+        List<LivePlugin> _livePlugins;
 
-        public static JSONStorableBool logChangesJsb { get; private set; }
+        string _mainDir;
+        FrequencyRunner _runner;
 
-        private bool _isSessionPlugin;
-        private bool _initDone;
-        private bool _isFocused;
+        public JSONStorableBool logChangesJsb { get; private set; }
+
+        void Update()
+        {
+            if(!_initDone || !_isFocused)
+            {
+                return;
+            }
+
+            try
+            {
+                _runner.Run(() =>
+                {
+                    CheckAllPlugins();
+                    StartCoroutine(DeferBuildLivePluginsList());
+                });
+            }
+            catch(Exception e)
+            {
+                Utils.LogError($"Update: {e}");
+                enabled = false;
+            }
+        }
+
+        void OnApplicationFocus(bool isFocused)
+        {
+            _isFocused = isFocused;
+        }
 
         public override void Init()
         {
             try
             {
-                script = this;
                 string creatorName = UserPreferences.singleton.creatorName;
                 if(creatorName == null || creatorName.Trim().Length == 0)
                 {
-                    LogError("Set your creator name in user preferences and reload the plugin.");
+                    Utils.LogError("Set your creator name in user preferences and reload the plugin.");
                     return;
                 }
 
-                _isSessionPlugin = containingAtom.name == "CoreControl" && string.IsNullOrEmpty(containingAtom.uid);
+                _isSessionPlugin = containingAtom.type == "SessionPluginManager";
                 _mainDir = $@"Custom\Scripts\{creatorName}";
 
                 var title = TitleTextField("Title", $"\n{nameof(LiveReload)} {VERSION}", 36);
@@ -53,11 +77,11 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Init: {e}");
+                Utils.LogError($"Init: {e}");
             }
         }
 
-        private JSONStorableString TitleTextField(
+        JSONStorableString TitleTextField(
             string paramName,
             string initialValue,
             int fontSize,
@@ -72,7 +96,7 @@ namespace LiveReload
             return storable;
         }
 
-        private void CreateLogDetectedChangesToggle()
+        void CreateLogDetectedChangesToggle()
         {
             logChangesJsb = new JSONStorableBool("logDetectedChanges", false);
             var logChangesToggle = CreateToggle(logChangesJsb);
@@ -80,7 +104,7 @@ namespace LiveReload
             RegisterBool(logChangesJsb);
         }
 
-        private Dictionary<string, List<string>> FindPluginsInSceneJSON()
+        Dictionary<string, List<string>> FindPluginsInSceneJSON()
         {
             try
             {
@@ -105,13 +129,13 @@ namespace LiveReload
             }
             catch(Exception e)
             {
-                LogError($"Failed reading scene JSON for plugin paths: {e}");
+                Utils.LogError($"Failed reading scene JSON for plugin paths: {e}");
             }
 
             return null;
         }
 
-        private static List<string> FindPluginsInAtomJson(JSONClass atomJSON)
+        List<string> FindPluginsInAtomJson(JSONClass atomJSON)
         {
             var managerJSON = FindPluginManagerJSON(atomJSON["storables"].AsArray);
             if(managerJSON != null)
@@ -122,7 +146,7 @@ namespace LiveReload
             return null;
         }
 
-        private static JSONClass FindPluginManagerJSON(JSONArray storablesJSONArray)
+        JSONClass FindPluginManagerJSON(JSONArray storablesJSONArray)
         {
             foreach(JSONClass storableJSON in storablesJSONArray)
             {
@@ -135,7 +159,7 @@ namespace LiveReload
             return null;
         }
 
-        private static List<string> FindPluginsInManagerJSON(JSONClass managerJson)
+        List<string> FindPluginsInManagerJSON(JSONClass managerJson)
         {
             var result = new List<string>();
             var pluginsObj = managerJson["plugins"].AsObject;
@@ -154,7 +178,7 @@ namespace LiveReload
             return result;
         }
 
-        private IEnumerator DeferInit()
+        IEnumerator DeferInit()
         {
             yield return new WaitForEndOfFrame();
             while(SuperController.singleton.isLoading)
@@ -166,7 +190,7 @@ namespace LiveReload
             _initDone = true;
         }
 
-        private MVRPluginManager FindManager(string atomUid)
+        MVRPluginManager FindManager(string atomUid)
         {
             MVRPluginManager result = null;
             if(_isSessionPlugin && atomUid == "Session")
@@ -194,7 +218,7 @@ namespace LiveReload
             return result;
         }
 
-        private void BuildLivePluginsList()
+        void BuildLivePluginsList()
         {
             try
             {
@@ -217,25 +241,25 @@ namespace LiveReload
                         var existingLivePlugin = _livePlugins.Find(existing => existing.Uid() == $"{atomUid}:{pluginFullPath}");
                         if(existingLivePlugin == null)
                         {
-                            _livePlugins.Add(new LivePlugin(atomUid, pluginFullPath, FindManager(atomUid)));
+                            _livePlugins.Add(new LivePlugin(this, atomUid, pluginFullPath, FindManager(atomUid)));
                         }
                     }
                 }
             }
             catch(Exception e)
             {
-                LogError($"BuildLivePluginsList: {e}");
+                Utils.LogError($"BuildLivePluginsList: {e}");
                 enabled = false;
             }
         }
 
-        private IEnumerator DeferBuildLivePluginsList()
+        IEnumerator DeferBuildLivePluginsList()
         {
             yield return new WaitForSecondsRealtime(0.67f);
             BuildLivePluginsList();
         }
 
-        private void CheckAllPlugins()
+        void CheckAllPlugins()
         {
             for(int i = _livePlugins.Count - 1; i >= 0; i--)
             {
@@ -254,33 +278,6 @@ namespace LiveReload
                 {
                     livePlugin.CheckDiff();
                 }
-            }
-        }
-
-        private void OnApplicationFocus(bool isFocused)
-        {
-            _isFocused = isFocused;
-        }
-
-        private void Update()
-        {
-            if(!_initDone || !_isFocused)
-            {
-                return;
-            }
-
-            try
-            {
-                _runner.Run(() =>
-                {
-                    CheckAllPlugins();
-                    StartCoroutine(DeferBuildLivePluginsList());
-                });
-            }
-            catch(Exception e)
-            {
-                LogError($"Update: {e}");
-                enabled = false;
             }
         }
     }
