@@ -1,4 +1,4 @@
-﻿using MVR.FileManagementSecure;
+using MVR.FileManagementSecure;
 using System;
 using System.Collections.Generic;
 using System.Linq;

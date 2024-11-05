@@ -1,4 +1,4 @@
-﻿using MVR.FileManagementSecure;
+using MVR.FileManagementSecure;
 using System.Collections.Generic;
 
 namespace everlaster
