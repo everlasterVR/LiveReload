@@ -1,6 +1,7 @@
 Common\src\Components\UnityEventsListener.cs
 Common\src\Storables\StorableAction.cs
 Common\src\Storables\StorableBool.cs
+Common\src\Utils\Clock.cs
 Common\src\Utils\FileUtils.cs
 Common\src\Utils\LogBuilder.cs
 Common\src\Utils\Utils.cs
@@ -8,7 +9,3 @@ Common\src\Bindings.cs
 Common\src\Extensions.cs
 Common\src\Resources.cs
 Common\src\Script.cs
-src\Utils\Clock.cs
-src\FileSearch.cs
-src\LivePlugin.cs
-src\LiveReload.cs

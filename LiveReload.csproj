@@ -86,9 +86,9 @@
         <Compile Include="src\FileSearch.cs"/>
         <Compile Include="src\LivePlugin.cs"/>
         <Compile Include="src\LiveReload.cs"/>
-        <Compile Include="src\Utils\Clock.cs" />
     </ItemGroup>
     <ItemGroup>
+        <Content Include="Common.cslist" />
         <Content Include="Common\scripts\*.sh"/>
         <Content Include=".gitignore"/>
         <Content Include="LiveReload.cslist"/>

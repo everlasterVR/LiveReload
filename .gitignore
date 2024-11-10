@@ -5,4 +5,6 @@ bin/
 obj/
 publish/
 *.fav
+*.hide
 Folder.DotSettings.user
+LiveReload.cslist
