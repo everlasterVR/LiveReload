@@ -41,7 +41,7 @@ namespace everlaster
                 return;
             }
 
-            _isSessionPlugin = containingAtom.type == "SessionPluginManager";
+            _isSessionPlugin = containingAtom.type == AtomType.SESSION_PLUGIN_MANAGER;
             _mainDir = $@"Custom\Scripts\{creatorName}";
 
             logChangesJsb = new StorableBool("logDetectedChanges", "Log Detected Changes", false);
